@@ -165,10 +165,10 @@ class CommonBattleExecutor(AbstractBattleExecutor):
         self._square_id = ret["square_id"]
 
         # 是否為終末格
-        self._finished = ret["is_finish"]
+        self.finished = ret["is_finish"]
 
         # 戰鬥格
-        if ret["item_effect"] == 0:
+        if (len(ret["scout"]) != 0):
             self._enemy_formation = ret["scout"]["formation_id"]
             return BattlePointType.BATTLE
         else:
@@ -195,7 +195,7 @@ class CommonBattleExecutor(AbstractBattleExecutor):
         super().update_after_battle(data)
 
         # 檢查敗北或戰鬥結束
-        self._finished = data["finish"]["is_finish"]
+        self.finished = data["finish"]["is_finish"]
 
     def check_grind_finish(self):
         if not battle_config.grind_mode:
@@ -205,7 +205,7 @@ class CommonBattleExecutor(AbstractBattleExecutor):
         points = static_lib.get_mapid_before_boss(self.episode, self.field)
         if points:
             if self._square_id in points.get_points():
-                self._finished = True
+                self.finished = True
 
     def handle_battle_point(self, formation=-1):
         best_formation = get_favorable_formation(self._enemy_formation) if formation == -1 else formation
@@ -295,7 +295,7 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
 
     def update_info_from_forward(self, data):
         self._next_square_id = data["square_id"]
-        self._finished = data["is_finish"]
+        self.finished = data["is_finish"]
 
         if len(data["scout"]) != 0:
             self._enemy_formation = data["scout"]["formation_id"]
@@ -330,7 +330,7 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
         self._takeout = gimmick["settle_up"]["takeout"]
 
         # 檢查敗北
-        self._finished = gimmick["is_finish"]
+        self.finished = gimmick["is_finish"]
 
     def print_final_takeout(self):
         if self._takeout is None:
@@ -426,7 +426,7 @@ class TsukiExecutor(AbstractBattleExecutor):
 
     def update_info_from_forward(self, data):
         self._next_square_id = data["square_id"]
-        self._finished = data["is_finish"]
+        self.finished = data["is_finish"]
         self._next_candidate_points = data["tsukimi"]["next"] or []
 
         if (len(data["scout"]) != 0):
