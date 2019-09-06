@@ -6,7 +6,7 @@ from database import UserLibrary
 from datatype import EventInfo, Resources, SwordTeam, TsukiEventInfo
 from login import DMMAuthenticator
 
-buildin_command = ["ls", "battle", "event", "forge", "swap","sakura"]
+buildin_command = ["ls", "battle", "event", "forge", "swap", "sakura"]
 
 
 class ClientCreateFailException(Exception):
