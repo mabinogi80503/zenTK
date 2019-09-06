@@ -106,14 +106,22 @@ class TkrbClient(object):
         return team_ref
 
     def sakura(self, team_id, mem_idx, episode, field):
+        if int(team_id) < 0 or int(team_id) > 4:
+            return
+
+        if int(mem_idx) < 1 or int(mem_idx) > 6:
+            return
+
         team_ref = self.teams[str(team_id)]
-        if not team_ref.available: 
+        if not team_ref.available:
             print("該隊沒空ㄏㄏ")
             return
+
         mem_serial = team_ref.swords[str(mem_idx)]
         if not mem_serial:
             print("沒有這位QQ")
-            return      
+            return
+
         team_record = team_ref.swords.copy()
         team_ref.clear()
 
@@ -122,18 +130,15 @@ class TkrbClient(object):
             print("設置隊長成功")
         else:
             print("這不該是隊長QQ")
-        
         count = 0
 
         while int(team_ref.sword_refs[0].raw_fatigue) < 80 and count < 5:
             count = count + 1
-            self.battle(team_id, episode, field, sakura = True)
-        
-        for idx in range(1,7):
+            self.battle(team_id, episode, field, sakura=True)
+        for idx in range(1, 7):
             team_ref.set_sword(idx, team_record[str(idx)])
 
-
-    def battle(self, team_id, episode, field, sakura = False):
+    def battle(self, team_id, episode, field, sakura=False):
         team_ref = self._check_before_battle(team_id)
         if not team_ref:
             return
@@ -303,7 +308,7 @@ class TkrbClient(object):
         elif subcmd == "c":
             team = args[1]
             self.teams[team].clear()
-    
+
     def _handle_sakura_cmd(self, args):
         import re
         mem_id = "1"
@@ -332,4 +337,3 @@ class TkrbClient(object):
 
         else:
             print(Fore.RED + "命令錯誤！")
-

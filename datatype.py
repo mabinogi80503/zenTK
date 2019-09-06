@@ -388,6 +388,9 @@ class SwordTeam(object):
         return not (False in [sword.battleable for sword in self.sword_refs if sword])
 
     def set_sword(self, index, serial_id):
+        if self.swords[str(index)] == serial_id:
+            return
+
         if 1 <= int(index) <= 6:
             self.api.set_sword(self.id, index, serial_id)
         else:
@@ -395,6 +398,9 @@ class SwordTeam(object):
 
     def remove(self, index):
         if index in self.swords.keys():
+            if self.id == "1" and index == "1":
+                return
+
             if self.swords[index]:
                 self.api.remove_sword(self.id, index, self.swords[index])
         else:
