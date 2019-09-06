@@ -105,7 +105,11 @@ class TkrbClient(object):
         team_ref = self._check_team_status(team_id)
         return team_ref
 
-    def sakura(self, team_id, mem_idx, episode, field):
+    def team_sakura(self, episode, field, team_id):
+        for idx in range(1, 7):
+            self.sakura(episode, field, team_id, idx)
+
+    def sakura(self, episode, field, team_id, mem_idx):
         if int(team_id) < 0 or int(team_id) > 4:
             return
 
@@ -132,7 +136,7 @@ class TkrbClient(object):
             print("這不該是隊長QQ")
         count = 0
 
-        while int(team_ref.sword_refs[0].raw_fatigue) < 80 and count < 5:
+        while int(team_ref.sword_refs[0].fatigue) < 80 and count < 5:
             count = count + 1
             self.battle(team_id, episode, field, sakura=True)
         for idx in range(1, 7):
@@ -311,9 +315,9 @@ class TkrbClient(object):
 
     def _handle_sakura_cmd(self, args):
         import re
-        mem_id = "1"
+        mem_id = None
         team_id = "1"
-        episode = field = None
+        episode = field = 1
         event = False
 
         i = 0
@@ -333,7 +337,10 @@ class TkrbClient(object):
             i += 1
 
         if team_id and episode and field:
-            self.sakura(team_id, mem_id, episode, field)
+            if mem_id:
+                self.sakura(episode, field, team_id, mem_id)
+            else:
+                self.team_sakura(episode, field, team_id)
 
         else:
             print(Fore.RED + "命令錯誤！")
