@@ -134,7 +134,7 @@ class BattlePointType(Enum):
 
 
 class CommonBattleExecutor(AbstractBattleExecutor):
-    def __init__(self, api, team, episode_id, field_id, sakura = False, *args, **kwargs):
+    def __init__(self, api, team, episode_id, field_id, sakura=False, *args, **kwargs):
         super().__init__(api, team)
         self.episode = int(episode_id)
         self.field = int(field_id)
