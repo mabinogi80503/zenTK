@@ -1,11 +1,13 @@
 from colorama import Fore
 
 from api import APICallFailedException
-from config import app_config
 from database import UserLibrary
 from datatype import EventInfo, Resources, SwordTeam, TsukiEventInfo
 from login import DMMAuthenticator
+from preferences import preferences_mgr
 
+app_config = preferences_mgr.get("system")
+battle_config = preferences_mgr.get("battle")
 buildin_command = ["ls", "battle", "event", "forge", "swap", "sakura"]
 
 
@@ -265,7 +267,7 @@ class TkrbClient(object):
 
         from time import sleep
 
-        interval = app_config.battle_interval
+        interval = int(battle_config.get("battle_interval"))
 
         if event:
             for count in range(times):

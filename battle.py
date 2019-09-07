@@ -3,7 +3,9 @@ from enum import Enum
 
 from colorama import Fore
 
-from config import battle_config
+from preferences import preferences_mgr
+
+battle_config = preferences_mgr.get("battle")
 
 
 # 解密加密的戰報
@@ -198,7 +200,7 @@ class CommonBattleExecutor(AbstractBattleExecutor):
         self.finished = data["finish"]["is_finish"]
 
     def check_grind_finish(self):
-        if not battle_config.grind_mode:
+        if not battle_config.get("grind_mode", False):
             return
 
         from database import static_lib
