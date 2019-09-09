@@ -7,6 +7,7 @@ entrypoints==0.3
 flake8==3.7.7
 idna==2.8
 mccabe==0.6.1
+parsimonious==0.8.1
 prettytable==0.7.2
 prompt-toolkit==2.0.9
 pycodestyle==2.5.0
