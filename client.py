@@ -307,7 +307,8 @@ grammer = r"""
     immutable = exit / ls / _
     mutable = battle / event / sakura
 
-    field = _ ~r"(\d+)-(\d+)" _
+    integer = ~r"\d+"
+    field = _ integer "-" integer _
     value_opts = _ value_opts_name _ value_opts_value _
     value_opts_name = "-m" / "-p" / "-t"
     value_opts_value = ~r"\w+"
@@ -318,8 +319,7 @@ grammer = r"""
     event = _ "event" _ value_opts+
     sakura = _ "sakura" _ battle_opts*
 
-    ls = (_ "ls" _ "-p" _ ~r"\d+" _) / (_ "ls" _)
-
+    ls = (_ "ls" _ "-p" _ integer _) / (_ "ls" _)
     exit = _ "exit" _
     _ = ~r"\s*"
 """
@@ -344,13 +344,13 @@ class TkrbExecutor(NodeVisitor):
     def visit_mutable(self, node, children):
         return node.text, children
 
+    def visit_integer(self, node, children):
+        return node.text
+
     def visit_field(self, node, children):
-        data = children[1]
-
-        episdoe, field = data.text.split("-")
-        self.options["episode"] = episdoe
+        _, episode, _, field, _ = children
+        self.options["episode"] = episode
         self.options["field"] = field
-
         return node
 
     def visit_value_opts(self, node, children):
@@ -390,15 +390,13 @@ class TkrbExecutor(NodeVisitor):
 
         if len(children) == 3:
             self.options["-p"] = "*"
-            print(f"印出所有隊伍")
             return node
 
         kind = children[3].text
-        team = children[5].text
+        team = children[5]
 
         if kind == "-p":
             self.options[kind] = team
-            print(f"印出第 {team} 隊")
 
         return node
 
