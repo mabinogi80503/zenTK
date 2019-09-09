@@ -1,4 +1,7 @@
 from colorama import Fore
+from parsimonious.grammar import Grammar
+from parsimonious.exceptions import ParseError, VisitationError
+from parsimonious.nodes import NodeVisitor
 
 from api import APICallFailedException
 from database import UserLibrary
@@ -34,6 +37,12 @@ class TkrbClient(object):
             "4": SwordTeam(self.api,
                            self.user_data,
                            "4")
+        }
+        self.handler = {
+            "ls": self._handle_list,
+            "battle": self._handle_battle,
+            "event": self._handle_event,
+            "sakura": self._handle_sakura,
         }
         self.init_first()
 
@@ -206,87 +215,63 @@ class TkrbClient(object):
         else:
             print(Fore.RED + "刀爐不能使用或是有東西佔位子！")
 
-    def execute(self, command):
-        command = command.strip()
-        if command == "exit" or command == "q":
+    def execute(self, command, options):
+        if command == "exit":
             from sys import exit
             exit(0)
 
         try:
-            for cmd in buildin_command:
-                if command.startswith(cmd):
-                    self._handle_buildin_command(command)
-        except APICallFailedException:
-            pass
+            print("execute!")
+            self.handler[command](options)
+        except KeyError as err:
+            print("Fuck !" + str(err))
 
-    def _handle_buildin_command(self, command):
-        command = command.split()
+    def _handle_list(self, options):
+        team = options.get("-p", "*")
 
-        if command[0] == "ls":
-            self._handle_list_cmd(command[1:])
-        elif command[0] == "battle":
-            self._handle_battle_cmd(command[1:])
-        elif command[0] == "forge":
-            self._handle_forge_cmd(command[1:])
-        elif command[0] == "swap":
-            self._handle_swap_cmd(command[1:])
-        elif command[0] == "sakura":
-            self._handle_sakura_cmd(command[1:])
-
-    def _handle_list_cmd(self, args):
-        if len(args) == 0 or args[0] == "--all" or args[0] == "-a":
+        if team == "*":
             self.list_team(list_all=True)
-        elif args[0].startswith("t"):
-            team_id = args[0][1:]
-            self.list_team(team_id=team_id)
+        else:
+            self.list_team(team_id=team)
 
-    def _handle_battle_cmd(self, args):
-        import re
-        times = 1
-        team_id = "1"
-        episode = field = None
-        event = False
-
-        i = 0
-        while i < len(args):
-            if args[i] == "--time" or args[i] == "-t":
-                i += 1
-                times = int(args[i])
-            elif args[i] == "--party" or args[i] == "-p":
-                i += 1
-                team_id = args[i]
-            elif args[i] == "event":
-                event = True
-
-            if not event:
-                match = re.match(r"(\d+)-(\d+)", args[i])
-                if match:
-                    episode = int(match.group(1))
-                    field = int(match.group(2))
-            i += 1
-
-        from time import sleep
-
+    def _handle_battle(self, options):
+        times = int(options["-t"])
+        team_id = int(options["-p"])
+        episode = int(options["episode"])
+        field = int(options["field"])
         interval = int(battle_config.get("battle_interval"))
 
-        if event:
-            for count in range(times):
-                self.event_battle(team_id)
+        from time import sleep
+        for count in range(times):
+            self.battle(team_id, episode, field)
 
-                if interval > 0.0 and count < times - 1:
-                    print(f"等待 {interval} 秒...")
-                    sleep(interval)
-            return
+            if interval > 0.0 and count < times - 1:
+                print(f"等待 {interval} 秒...")
+                sleep(interval)
 
-        if team_id and episode and field:
-            for count in range(times):
-                self.battle(team_id, episode, field)
+    def _handle_event(self, options):
+        times = int(options["-t"])
+        team_id = int(options["-p"])
+        interval = int(battle_config.get("battle_interval"))
 
-                if interval > 0.0 and count < times - 1:
-                    print(f"等待 {interval} 秒...")
-                    sleep(interval)
+        from time import sleep
+        for count in range(times):
+            self.event_battle(team_id)
+
+            if interval > 0.0 and count < times - 1:
+                print(f"等待 {interval} 秒...")
+                sleep(interval)
+
+    def _handle_sakura(self, options):
+        team_id = int(options["-p"])
+        episode = int(options["episode"])
+        field = int(options["field"])
+        mem_id = options.get("-m", None)
+
+        if mem_id:
+            self.sakura(episode, field, team_id, mem_id)
         else:
-            print(Fore.RED + "命令錯誤！")
+            self.team_sakura(episode, field, team_id)
 
     def _handle_forge_cmd(self, args):
         if len(args) == 0:
@@ -315,34 +300,130 @@ class TkrbClient(object):
             team = args[1]
             self.teams[team].clear()
 
-    def _handle_sakura_cmd(self, args):
-        import re
-        mem_id = None
-        team_id = "1"
-        episode = field = 1
-        event = False
 
-        i = 0
-        while i < len(args):
-            if args[i] == "--mem" or args[i] == "-m":
-                i += 1
-                mem_id = args[i]
-            elif args[i] == "--party" or args[i] == "-p":
-                i += 1
-                team_id = args[i]
+grammer = r"""
+    command = mutable / immutable
 
-            if not event:
-                match = re.match(r"(\d+)-(\d+)", args[i])
-                if match:
-                    episode = int(match.group(1))
-                    field = int(match.group(2))
-            i += 1
+    immutable = exit / ls / _
+    mutable = battle / event / sakura
 
-        if team_id and episode and field:
-            if mem_id:
-                self.sakura(episode, field, team_id, mem_id)
-            else:
-                self.team_sakura(episode, field, team_id)
+    field = _ ~r"(\d+)-(\d+)" _
+    value_opts = _ value_opts_name _ value_opts_value _
+    value_opts_name = "-m" / "-p" / "-t"
+    value_opts_value = ~r"\w+"
 
-        else:
-            print(Fore.RED + "命令錯誤！")
+    battle_opts = field / value_opts+
+
+    battle = _ "battle" _ battle_opts+
+    event = _ "event" _ value_opts+
+    sakura = _ "sakura" _ battle_opts*
+
+    ls = (_ "ls" _ "-p" _ ~r"\d+" _) / (_ "ls" _)
+
+    exit = _ "exit" _
+    _ = ~r"\s*"
+"""
+
+grammer = Grammar(grammer)
+
+
+class TkrbExecutor(NodeVisitor):
+    def __init__(self):
+        super().__init__()
+        self.method = None
+        self.options = {"-t": 1, "-p": 1, "episode": 1, "field": 1}
+
+    def visit_command(self, node, children):
+        print(self.method)
+        print(self.options)
+        return node
+
+    def visit_immutable(self, node, children):
+        return node
+
+    def visit_mutable(self, node, children):
+        return node.text, children
+
+    def visit_field(self, node, children):
+        data = children[1]
+
+        episdoe, field = data.text.split("-")
+        self.options["episode"] = episdoe
+        self.options["field"] = field
+
+        return node
+
+    def visit_value_opts(self, node, children):
+        _, name, _, value, _ = children
+        self.options[name] = value
+        return node
+
+    def visit_value_opts_name(self, node, children):
+        return node.text
+
+    def visit_value_opts_value(self, node, children):
+        return node.text
+
+    def visit_battle_opts(self, node, children):
+        if len(children) == 1:
+            return children[0]
+        return children
+
+    def visit_battle(self, node, children):
+        _, _, _, *opts = children
+        self.method = node.expr_name
+        return node
+
+    def visit_event(self, node, children):
+        _, _, _, *opts = children
+        self.method = node.expr_name
+        return node
+
+    def visit_sakura(self, node, children):
+        _, _, _, *opts = children
+        self.method = node.expr_name
+        return node
+
+    def visit_ls(self, node, children):
+        children = children[0]
+        self.method = node.expr_name
+
+        if len(children) == 3:
+            self.options["-p"] = "*"
+            print(f"印出所有隊伍")
+            return node
+
+        kind = children[3].text
+        team = children[5].text
+
+        if kind == "-p":
+            self.options[kind] = team
+            print(f"印出第 {team} 隊")
+
+        return node
+
+    def visit_exit(self, node, children):
+        self.method = node.expr_name
+        return node
+
+    def generic_visit(self, node, children):
+        if not node.expr_name and children:
+            if len(children) == 1:
+                return children[0]
+            return children
+        return node
+
+
+def execute(client, command):
+    try:
+        root = grammer.parse(command)
+    except ParseError as err:
+        part = command[err.pos:err.pos + 10]
+        print(f"Syntax error near '{part}'")
+    else:
+        visitor = TkrbExecutor()
+        try:
+            visitor.visit(root)
+            client.execute(visitor.method, visitor.options)
+        except VisitationError as err:
+            print(err)

@@ -2,7 +2,7 @@ import click
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 
-from client import ClientCreateFailException, TkrbClient
+from client import ClientCreateFailException, TkrbClient, execute
 
 __version__ = "0.0.36"
 
@@ -18,7 +18,7 @@ class TkrbCLI(object):
         while True:
             try:
                 command = self.cli_session.prompt("TkrbAuto> ")
-                self.client.execute(command)
+                execute(self.client, command)
             except KeyboardInterrupt:
                 break
             except EOFError:
