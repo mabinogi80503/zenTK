@@ -43,6 +43,7 @@ class TkrbClient(object):
             "battle": self._handle_battle,
             "event": self._handle_event,
             "sakura": self._handle_sakura,
+            "forge": self._handle_forge,
         }
         self.init_first()
 
@@ -207,7 +208,7 @@ class TkrbClient(object):
     def list_equipments(self):
         pass
 
-    def forge_build(self, slot_no, steel, charcoal, coolant, files, use_assist=False):
+    def _forge_build(self, slot_no, steel, charcoal, coolant, files, use_assist=False):
         ret = self.api.forge_start(slot_no, steel, charcoal, coolant, files, use_assist)
 
         if not ret["status"]:
@@ -273,16 +274,31 @@ class TkrbClient(object):
         else:
             self.team_sakura(episode, field, team_id)
 
-    def _handle_forge_cmd(self, args):
-        if len(args) == 0:
-            print(Fore.RED + "命令錯誤！")
+    def _handle_forge(self, options):
+        action = options.get("action", None)
 
-        subcmd = args[0]
-        if subcmd == "build":
-            if len(args[1:]) != 5:
-                print(Fore.RED + "命令錯誤！")
-            else:
-                self.forge_build(int(args[1]), int(args[2]), int(args[3]), int(args[4]), int(args[5]))
+        if not action:
+            return
+
+        if action == "ls":
+            # TODO: add the call for forge list
+            print("TODO: 印出鍛造所清單")
+            return
+
+        if action == "build":
+            slot = options.get("slot", 1)
+            steel = options.get("steel", None)
+            charcoal = options.get("charcoal", None)
+            coolant = options.get("coolant", None)
+            files = options.get("files", None)
+            quick = options.get("quick", False)
+
+            if not steel or not charcoal or not coolant or not files:
+                print("未指定鍛造需要的素材量！")
+                return
+
+            self._forge_build(slot, steel, charcoal, coolant, files, quick)
+            return
 
     def _handle_swap_cmd(self, args):
         subcmd = args[0]
@@ -305,7 +321,7 @@ grammer = r"""
     command = mutable / immutable
 
     immutable = exit / ls / _
-    mutable = battle / event / sakura
+    mutable = battle / event / sakura / forge
 
     integer = ~r"\d+"
     field = _ integer "-" integer _
@@ -318,6 +334,9 @@ grammer = r"""
     battle = _ "battle" _ battle_opts+
     event = _ "event" _ value_opts+
     sakura = _ "sakura" _ battle_opts*
+    forge = _ "forge" _ forge_opts _
+    forge_opts = (_ "build" _ forge_build_opts+ _) / (_ "ls" _)
+    forge_build_opts = (_ "-m" _ integer _ integer _ integer _ integer _) / (_ "-s" _ integer _) / (_ "-u" _)
 
     ls = (_ "ls" _ "-p" _ integer _) / (_ "ls" _)
     exit = _ "exit" _
@@ -382,6 +401,35 @@ class TkrbExecutor(NodeVisitor):
     def visit_sakura(self, node, children):
         _, _, _, *opts = children
         self.method = node.expr_name
+        return node
+
+    def visit_forge(self, node, children):
+        self.method = "forge"
+        return node
+
+    def visit_forge_opts(self, node, children):
+        children = children[0]
+        self.options["action"] = children[1].text
+        return node
+
+    def visit_forge_build_opts(self, node, children):
+        children = children[0]
+        kind = children[1].text
+
+        if kind == "-u":
+            self.options["quick"] = True
+            return node
+
+        slot = children[3]
+        if kind == "-s":
+            self.options["slot"] = slot
+            return node
+
+        _, steel, _, charcoal, _, coolant, _, files, *_ = children[2:]
+        if kind == "-m":
+            self.options.update({"steel": steel, "charcoal": charcoal, "coolant": coolant, "files": files})
+            return node
+
         return node
 
     def visit_ls(self, node, children):
