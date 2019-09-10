@@ -218,6 +218,9 @@ class TkrbClient(object):
             print(Fore.RED + "刀爐不能使用或是有東西佔位子！")
 
     def execute(self, command, options):
+        if command is None:
+            return
+
         if command == "exit":
             from sys import exit
             exit(0)
@@ -310,7 +313,7 @@ class TkrbClient(object):
             return
 
         if action == "clear":
-            idx = options.get("team")
+            idx = options.get("party")
             self.teams[idx].clear()
             return
 
