@@ -323,11 +323,12 @@ grammer = r"""
     immutable = exit / ls / _
     mutable = battle / event / sakura / forge
 
+    string = ~r"\w+"
     integer = ~r"\d+"
+
     field = _ integer "-" integer _
-    value_opts = _ value_opts_name _ value_opts_value _
+    value_opts = _ value_opts_name _ string _
     value_opts_name = "-m" / "-p" / "-t"
-    value_opts_value = ~r"\w+"
 
     battle_opts = field / value_opts+
 
@@ -363,6 +364,9 @@ class TkrbExecutor(NodeVisitor):
     def visit_mutable(self, node, children):
         return node.text, children
 
+    def visit_string(self, node, children):
+        return node.text
+
     def visit_integer(self, node, children):
         return node.text
 
@@ -378,9 +382,6 @@ class TkrbExecutor(NodeVisitor):
         return node
 
     def visit_value_opts_name(self, node, children):
-        return node.text
-
-    def visit_value_opts_value(self, node, children):
         return node.text
 
     def visit_battle_opts(self, node, children):
