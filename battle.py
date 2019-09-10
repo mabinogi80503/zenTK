@@ -44,6 +44,12 @@ def get_resource_type_name(type):
     return names[type] if type < len(names) else "不明"
 
 
+def get_resource_id_name(resource_id):
+    resource_id = str(resource_id)
+    names = {"1": "依賴禮", "2": "木炭", "3": "玉鋼", "4": "冷卻材", "5": "砥石", "37": "月兔糰子"}
+    return names[resource_id] if resource_id in names.keys() else "不明"
+
+
 def check_new_sword(data):
     """
     檢查戰鬥結束時，是否有獲取新的刀劍男士
@@ -219,7 +225,7 @@ class CommonBattleExecutor(AbstractBattleExecutor):
             return
 
         for material in self._resource_point_data:
-            material_name = get_resource_type_name(int(material["item_type"]))
+            material_name = get_resource_id_name(material["item_id"])
             material_count = material["item_num"]
             print(f"獲得 {material_name} x{material_count}")
 
