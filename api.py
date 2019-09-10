@@ -179,10 +179,20 @@ class TkrbApi(object):
         else:
             raise APICallFailedException("event_forward")
 
-    def forge_complete(self, req):
+    def forge_room(self):
+        url = "forge"
+
+        ret = self._request(url).json()
+        if ret["status"] == 0:
+            self.update_payload(token=ret["t"])
+            return ret
+        else:
+            raise APICallFailedException("forge_room")
+
+    def forge_complete(self, slot):
         url = "forge/complete"
 
-        data = {"slot_no": req["slot"]}
+        data = {"slot_no": slot}
         ret = self._request(url, data=data).json()
         if ret["status"] == 0:
             self.update_payload(token=ret["t"])
