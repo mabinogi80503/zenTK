@@ -222,6 +222,9 @@ class TkrbClient(object):
             from sys import exit
             exit(0)
 
+        if command == "clear":
+            return
+
         try:
             print("execute!")
             self.handler[command](options)
@@ -329,7 +332,7 @@ class TkrbClient(object):
 grammer = r"""
     command = mutable / immutable
 
-    immutable = exit / ls / _
+    immutable = exit / clear / ls / _
     mutable = battle / event / sakura / forge / swap
 
     string = ~r"\w+"
@@ -353,6 +356,7 @@ grammer = r"""
     swap_team_opts = _ integer _ (":" _ integer _)*
 
     ls = (_ "ls" _ "-p" _ integer _) / (_ "ls" _)
+    clear = _ "clear" _
     exit = _ "exit" _
     _ = ~r"\s*"
 """
@@ -503,6 +507,14 @@ class TkrbExecutor(NodeVisitor):
 
     def visit_exit(self, node, children):
         self.method = node.expr_name
+        return node
+
+    def visit_clear(self, node, children):
+        self.method = node.expr_name
+
+        from os import system
+        system("cls")  # windows / osx
+        system("clear")  # linux
         return node
 
     def generic_visit(self, node, children):
