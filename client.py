@@ -1,6 +1,6 @@
 from colorama import Fore
-from parsimonious.grammar import Grammar
 from parsimonious.exceptions import ParseError, VisitationError
+from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
 from api import APICallFailedException
@@ -226,10 +226,9 @@ class TkrbClient(object):
             return
 
         try:
-            print("execute!")
             self.handler[command](options)
         except KeyError as err:
-            print("Fuck !" + str(err))
+            print(f"Command {err} is not found!")
 
     def _handle_list(self, options):
         team = options.get("-p", "*")
@@ -371,8 +370,6 @@ class TkrbExecutor(NodeVisitor):
         self.options = {"-t": 1, "-p": 1, "episode": 1, "field": 1}
 
     def visit_command(self, node, children):
-        print(self.method)
-        print(self.options)
         return node
 
     def visit_immutable(self, node, children):
