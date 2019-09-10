@@ -44,6 +44,7 @@ class TkrbClient(object):
             "event": self._handle_event,
             "sakura": self._handle_sakura,
             "forge": self._handle_forge,
+            "swap": self._handle_swap,
         }
         self.init_first()
 
@@ -300,28 +301,36 @@ class TkrbClient(object):
             self._forge_build(slot, steel, charcoal, coolant, files, quick)
             return
 
-    def _handle_swap_cmd(self, args):
-        subcmd = args[0]
-        if subcmd == "s":
-            team = args[1]
-            index = args[2]
-            serial = args[3]
+    def _handle_swap(self, options):
+        action = options.get("action", None)
 
-            self.teams[team].set_sword(index, serial)
-        elif subcmd == "t":
-            team1 = args[1]
-            team2 = args[2]
+        if not action:
+            return
+
+        if action == "clear":
+            idx = options.get("team")
+            self.teams[idx].clear()
+            return
+
+        if action == "member":
+            # TODO: need serial id to support this QQ
+            # team_id = options.get("t1")
+            # idx = options.get("target_idx")
+            # self.teams[team_id].set_sword(idx, serial)
+            return
+
+        if action == "team":
+            team1 = int(options.get("t1"))
+            team2 = int(options.get("t2"))
             self.swap_teams(team1, team2)
-        elif subcmd == "c":
-            team = args[1]
-            self.teams[team].clear()
+            return
 
 
 grammer = r"""
     command = mutable / immutable
 
     immutable = exit / ls / _
-    mutable = battle / event / sakura / forge
+    mutable = battle / event / sakura / forge / swap
 
     string = ~r"\w+"
     integer = ~r"\d+"
@@ -338,6 +347,10 @@ grammer = r"""
     forge = _ "forge" _ forge_opts _
     forge_opts = (_ "build" _ forge_build_opts+ _) / (_ "ls" _)
     forge_build_opts = (_ "-m" _ integer _ integer _ integer _ integer _) / (_ "-s" _ integer _) / (_ "-u" _)
+
+    swap = _ "swap" _ swap_opts+ _
+    swap_opts = (_ "-p" _ swap_team_opts _) / (_ "-m" _ integer _) / (_ "-c" _ integer _)
+    swap_team_opts = _ integer _ (":" _ integer _)*
 
     ls = (_ "ls" _ "-p" _ integer _) / (_ "ls" _)
     exit = _ "exit" _
@@ -430,6 +443,45 @@ class TkrbExecutor(NodeVisitor):
         if kind == "-m":
             self.options.update({"steel": steel, "charcoal": charcoal, "coolant": coolant, "files": files})
             return node
+
+        return node
+
+    def visit_swap(self, node, children):
+        self.method = "swap"
+        return node
+
+    def visit_swap_opts(self, node, children):
+        children = children[0]
+        kind = children[1].text
+
+        cur_action = self.options.get("action", None)
+
+        if kind == "-m":
+            if not self.options.get("action", None):
+                self.options["action"] = "member"
+                self.options["target_idx"] = children[3]
+            return node
+
+        if kind == "-p":
+            if cur_action != "member":
+                self.options["action"] = "team"
+            return node
+
+        if kind == "-c":
+            self.options["action"] = "clear"
+            self.options["party"] = children[3]
+            return node
+
+        return node
+
+    def visit_swap_team_opts(self, node, children):
+        t1 = children[1]
+        self.options["t1"] = t1
+
+        if len(children) > 3:
+            children = children[3]
+            t2 = children[2]
+            self.options["t2"] = t2
 
         return node
 
