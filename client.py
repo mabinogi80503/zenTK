@@ -1,3 +1,6 @@
+from time import mktime, strptime
+from datetime import datetime, timedelta
+
 from colorama import Fore
 from parsimonious.exceptions import ParseError, VisitationError
 from parsimonious.grammar import Grammar
@@ -12,6 +15,10 @@ from preferences import preferences_mgr
 app_config = preferences_mgr.get("system")
 battle_config = preferences_mgr.get("battle")
 buildin_command = ["ls", "battle", "event", "forge", "swap", "sakura"]
+
+
+def make_datetime(timestr):
+    return datetime.fromtimestamp(mktime(strptime(timestr, '%Y-%m-%d %H:%M:%S')))
 
 
 class ClientCreateFailException(Exception):
@@ -45,6 +52,7 @@ class TkrbClient(object):
             "sakura": self._handle_sakura,
             "forge": self._handle_forge,
             "swap": self._handle_swap,
+            "conquest": self._handle_conquest,
         }
         self.init_first()
 
@@ -70,7 +78,11 @@ class TkrbClient(object):
 
     def home(self):
         # ret = self.api.home()
-        self.api.home()
+        ret = self.api.home()
+
+        now_time = make_datetime(ret["now"])
+        self._check_conquest(ret["party"], now_time)
+        self._check_duty(ret["duty"])
 
         # num_missions = ret.get("mission")
         # if num_missions:
@@ -87,6 +99,88 @@ class TkrbClient(object):
         #         print(Fore.YELLOW + "仍舊努力中～")
         # else:
         #     print(Fore.YELLOW + "無內番！")
+
+    def _check_conquest(self, data, now):
+        for party in [p for p in data.values() if p["finished_at"] is not None]:
+            finished_time = make_datetime(party["finished_at"])
+            if finished_time > now:
+                continue
+            self.receive_conquest_reward(party["party_no"])
+
+    def _check_duty(self, data):
+        if data is None or len(data) == 0:
+            print("無內番！")
+            return
+
+        finished_time = make_datetime(data["finished_at"]) - timedelta(hours=1)  # JP to TW
+        now = datetime.now()
+
+        if now >= finished_time:
+            try:
+                self.api.complete_duty()
+            except APICallFailedException:
+                print(Fore.RED + "內番看起來有一些錯誤？時間誤判嗎？" + Fore.RESET)
+                return
+
+    def _handle_conquest(self, options):
+        action = options.get("action", None)
+
+        if action == "ls":
+            self.show_conquest_list()
+
+        if action == "start":
+            self.start_conquest(options.get("field_id"), options.get("party"))
+
+        if action == "receive":
+            self.receive_conquest_reward(options.get("party"))
+
+    def start_conquest(self, field, party):
+        try:
+            self.api.start_conquest(field, party)
+        except APICallFailedException:
+            print(Fore.RED + f"隊伍 {party} 無法出發..." + Fore.RESET)
+
+    def receive_conquest_reward(self, party):
+        try:
+            self.api.receive_conquest_reward(party)
+        except APICallFailedException:
+            print(Fore.RED + f"無法領取隊伍 {party} 的遠征獎勵" + Fore.RESET)
+
+    def show_conquest_list(self):
+        try:
+            ret = self.api.go_conquest()
+
+            party_data = ret["party"]
+            data = ret["summary"]
+
+            if data is None or len(data) == 0:
+                print("目前無遠征唷！")
+                return
+
+            def transfer_field_2_human(field):
+                from math import ceil
+                print(field)
+                field = int(field)
+                episode = int(ceil(field / 4))
+                field = field - ((episode-1) * 4)
+                return f"{episode}-{field}"
+
+            now = make_datetime(ret["now"])
+            sorted_data = sorted(data.values(), key=lambda d: d["party_no"])
+
+            from prettytable import PrettyTable
+            table = PrettyTable()
+            table.field_names = ["隊伍", "地圖", "剩餘時間"]
+
+            for conq in sorted_data:
+                party_no = conq["party_no"]
+                field = transfer_field_2_human(conq["field_id"])
+                finished_time = make_datetime(party_data[str(party_no)]["finished_at"])
+                need_time = str(finished_time - now) if now <= finished_time else (Fore.YELLOW + "已完成" + Fore.RESET)
+                table.add_row([party_no, field, need_time])
+            print(table)
+        except APICallFailedException:
+            print(Fore.RED + f"無法進入遠征頁面" + Fore.RESET)
 
     # 檢查隊伍狀況，可行就回傳 team ref，否則就回傳 None
     def _check_team_status(self, team_id):
@@ -406,7 +500,7 @@ grammer = r"""
     command = mutable / immutable
 
     immutable = exit / clear / ls / _
-    mutable = battle / event / sakura / forge / swap
+    mutable = battle / event / sakura / forge / swap / conquest
 
     string = ~r"\w+"
     integer = ~r"\d+"
@@ -427,6 +521,9 @@ grammer = r"""
     swap = _ "swap" _ swap_opts+ _
     swap_opts = (_ "-p" _ swap_team_opts _) / (_ "-m" _ integer _) / (_ "-c" _ integer _)
     swap_team_opts = _ integer _ (":" _ integer _)*
+
+    conquest = (_ "conquest" _ conquest_opts+ _) / (_ "conquest" _)
+    conquest_opts = (_ "-s" _ field _) / (_ "-p" _ integer _)
 
     ls = (_ "ls" _ "-p" _ integer _) / (_ "ls" _)
     clear = _ "clear" _
@@ -561,6 +658,32 @@ class TkrbExecutor(NodeVisitor):
             t2 = children[2]
             self.options["t2"] = t2
 
+        return node
+
+    def visit_conquest(self, node, children):
+        self.method = node.expr_name
+
+        children = children[0]
+        if len(children) == 3:
+            self.options["action"] = "ls"
+            return node
+        return node
+
+    def visit_conquest_opts(self, node, children):
+        children = children[0]
+        kind = children[1].text
+
+        if kind == "-s":
+            self.options["action"] = "start"
+            a = int(self.options["episode"])
+            b = int(self.options["field"])
+            self.options["field_id"] = str((a-1) * 4 + b)
+            return node
+
+        if kind == "-p":
+            self.options.setdefault("action", "receive")
+            self.options["party"] = children[3]
+            return node
         return node
 
     def visit_ls(self, node, children):

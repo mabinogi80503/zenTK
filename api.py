@@ -239,6 +239,38 @@ class TkrbApi(object):
         else:
             raise APICallFailedException("complete_duty")
 
+    def go_conquest(self):
+        url = "conquest"
+
+        ret = self._request(url).json()
+        if ret["status"] == 0:
+            self.update_payload(token=ret["t"])
+            return ret
+        else:
+            raise APICallFailedException("go_conquest")
+
+    def start_conquest(self, field, party):
+        url = "conquest/start"
+        data = {"field_id": field, "party_no": party}
+
+        ret = self._request(url, data=data).json()
+        if ret["status"] == 0:
+            self.update_payload(token=ret["t"])
+            return ret
+        else:
+            raise APICallFailedException("start_conquest")
+
+    def receive_conquest_reward(self, party):
+        url = "conquest/complete"
+        data = {"party_no": party}
+
+        ret = self._request(url, data=data).json()
+        if ret["status"] == 0:
+            self.update_payload(token=ret["t"])
+            return ret
+        else:
+            raise APICallFailedException("receive_conquest_reward")
+
     def home(self):
         url = "home"
 
