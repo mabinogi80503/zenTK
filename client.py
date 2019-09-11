@@ -210,26 +210,55 @@ class TkrbClient(object):
         pass
 
     def _forge_room(self):
-        ret = self.api.forge_room()
+        try:
+            ret = self.api.forge_room()
+        except APICallFailedException:
+            print(Fore.RED + "無法進入鍛刀區..." + Fore.RESET)
+            return
         forge = ret["forge"]
         now = ret["now"]
 
         if forge is None or len(forge) == 0:
-            print(Fore.YELLOE + "沒有任何鍛刀作業！")
+            print(Fore.YELLOW + "沒有任何鍛刀作業！")
             return
-
-        with open("forgedata.txt", mode="a") as f:
-            f.write(str(ret))
 
         self._forge_show(forge, now)
 
-    def _forge_build(self, slot_no, steel, charcoal, coolant, files, use_assist=False):
-        ret = self.api.forge_start(slot_no, steel, charcoal, coolant, files, use_assist)
+    def _forge_build(self, slot_no, steel, charcoal, coolant, files, use_assist=0):
+        try:
+            ret = self.api.forge_start(slot_no, steel, charcoal, coolant, files, use_assist)
+        except APICallFailedException:
+            print(Fore.RED + "鍛刀爐出了一些問題..." + Fore.RESET)
+            return
 
-        if not ret["status"]:
-            print(f"開始在第 " + Fore.YELLOW + f"{slot_no}" + Fore.RESET + " 格刀爐上凌虐刀匠！")
-        else:
+        if ret["status"] != 0:
             print(Fore.RED + "刀爐不能使用或是有東西佔位子！")
+            return
+
+        if use_assist:
+            from database import static_lib
+
+            name = static_lib.get_sword(ret["sword_id"]).name
+            print("獲得刀劍：" + Fore.YELLOW + name + Fore.RESET)
+            return
+
+        print(f"開始在第 " + Fore.YELLOW + f"{slot_no}" + Fore.RESET + " 格刀爐上凌虐刀匠！")
+
+    def _forge_complete(self, slot):
+        try:
+            ret = self.api.forge_complete(slot)
+        except APICallFailedException:
+            print(Fore.RED + "快速完成鍛刀出現了錯誤..." + Fore.RESET)
+            return
+
+        if ret["status"] != 0:
+            print(Fore.RED + "無法領取在 {slot} 鍛位之刀劍！")
+            return
+
+        from database import static_lib
+
+        name = static_lib.get_sword(ret["sword_id"]).name
+        print("獲得刀劍：" + Fore.YELLOW + name + Fore.RESET)
 
     def _forge_show(self, forge, now):
         from time import mktime, strptime
@@ -329,13 +358,17 @@ class TkrbClient(object):
             self._forge_room()
             return
 
+        if action == "get":
+            self._forge_complete(options.get("slot"))
+            return
+
         if action == "build":
             slot = options.get("slot", 1)
             steel = options.get("steel", None)
             charcoal = options.get("charcoal", None)
             coolant = options.get("coolant", None)
             files = options.get("files", None)
-            quick = options.get("quick", False)
+            quick = options.get("quick", 0)
 
             if not steel or not charcoal or not coolant or not files:
                 print("未指定鍛造需要的素材量！")
@@ -388,7 +421,7 @@ grammer = r"""
     event = _ "event" _ value_opts+
     sakura = _ "sakura" _ battle_opts*
     forge = _ "forge" _ forge_opts _
-    forge_opts = (_ "build" _ forge_build_opts+ _) / (_ "ls" _)
+    forge_opts = (_ "build" _ forge_build_opts+ _) / (_ "get" _ integer _) / (_ "ls" _)
     forge_build_opts = (_ "-m" _ integer _ integer _ integer _ integer _) / (_ "-s" _ integer _) / (_ "-u" _)
 
     swap = _ "swap" _ swap_opts+ _
@@ -466,6 +499,9 @@ class TkrbExecutor(NodeVisitor):
     def visit_forge_opts(self, node, children):
         children = children[0]
         self.options["action"] = children[1].text
+
+        if self.options["action"] == "get":
+            self.options["slot"] = children[3]
         return node
 
     def visit_forge_build_opts(self, node, children):
@@ -473,7 +509,7 @@ class TkrbExecutor(NodeVisitor):
         kind = children[1].text
 
         if kind == "-u":
-            self.options["quick"] = True
+            self.options["quick"] = 1
             return node
 
         slot = children[3]
