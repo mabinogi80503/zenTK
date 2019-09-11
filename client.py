@@ -45,6 +45,8 @@ class TkrbClient(object):
             "sakura": self._handle_sakura,
             "forge": self._handle_forge,
             "swap": self._handle_swap,
+            "play": self._handle_play,
+            "sleep": self._handle_sleep,
         }
         self.init_first()
 
@@ -330,12 +332,25 @@ class TkrbClient(object):
             self.swap_teams(team1, team2)
             return
 
+    def _handle_play(self, options):
+        file = options.get("filename", None)
+        with open(file, 'r') as f:
+            content = f.readlines()
+        for command in content:
+            print(command.strip())
+            execute(self, command.strip())
+
+    def _handle_sleep(self, options):
+        sleep_interval = int(options.get("sleeptime", 0))
+        from time import sleep
+        sleep(sleep_interval)
+
 
 grammer = r"""
     command = mutable / immutable
 
-    immutable = exit / clear / ls / _
-    mutable = battle / event / sakura / forge / swap
+    immutable = exit / clear / ls / sleep / _
+    mutable = battle / event / sakura / forge / swap / play
 
     string = ~r"\w+"
     integer = ~r"\d+"
@@ -361,6 +376,12 @@ grammer = r"""
     clear = _ "clear" _
     exit = _ "exit" _
     _ = ~r"\s*"
+
+    play_opts = ~r"[\w\-\.@#]+"
+    play = _ "play" _ play_opts _
+
+    sleep = _ "sleep" _ integer _
+
 """
 
 grammer = Grammar(grammer)
@@ -515,6 +536,19 @@ class TkrbExecutor(NodeVisitor):
         from os import system
         system("cls")  # windows / osx
         system("clear")  # linux
+        return node
+
+    def visit_play(self, node, children):
+        self.method = "play"
+        return node
+
+    def visit_play_opts(self, node, children):
+        self.options["filename"] = node.text
+        return node.text
+
+    def visit_sleep(self, node, children):
+        self.method = "sleep"
+        self.options["sleeptime"] = children[3]
         return node
 
     def generic_visit(self, node, children):
