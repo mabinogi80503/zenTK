@@ -212,14 +212,13 @@ class DMMAuthenticator(BasicAuthenticator):
 
             # 登入結束！不再需要 proxy 了！
             self.proxies = None
-
-            from api import TkrbApi
-            return TkrbApi(url=self.server_url, user_id=self.user_id, cookie=self.cookie_value, token=self.st)
         except LoginFailException as e:
             print(Fore.RED + "失敗")
             print(e)
-            from sys import exit
-            exit(1)
+            return None
+        else:
+            from api import TkrbApi
+            return TkrbApi(url=self.server_url, user_id=self.user_id, cookie=self.cookie_value, token=self.st)
 
     def _request(self, url, method="GET", data=None, **kwargs):
         payload = None

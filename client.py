@@ -1,5 +1,5 @@
-from time import mktime, strptime
 from datetime import datetime, timedelta
+from time import mktime, strptime
 
 from colorama import Fore
 from parsimonious.exceptions import ParseError, VisitationError
@@ -14,15 +14,10 @@ from preferences import preferences_mgr
 
 app_config = preferences_mgr.get("system")
 battle_config = preferences_mgr.get("battle")
-buildin_command = ["ls", "battle", "event", "forge", "swap", "sakura"]
 
 
 def make_datetime(timestr):
     return datetime.fromtimestamp(mktime(strptime(timestr, '%Y-%m-%d %H:%M:%S')))
-
-
-class ClientCreateFailException(Exception):
-    pass
 
 
 class TkrbClient(object):
@@ -60,7 +55,7 @@ class TkrbClient(object):
     def create(cls, account, password):
         api = DMMAuthenticator(account, password).login()
         if not api:
-            raise ClientCreateFailException()
+            return None
 
         return cls(api)
 
