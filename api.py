@@ -1,6 +1,34 @@
+from functools import wraps
+
 import requests
 
 from notification import Observable
+
+
+def update_token(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        ret = func(self, *args, **kwargs)
+        if ret["status"] == 0:
+            self.update_payload(token=ret["t"])
+            return ret
+        else:
+            raise APICallFailedException(func.__name__)
+
+    return wrapper
+
+
+def notify_subject(name):
+    def outside(func):
+        def wrapper(self, *args, **kwargs):
+            ret = func(self, *args, **kwargs)
+            if ret["status"] == 0:
+                self.subjects[name].notify(ret)
+            return ret
+
+        return wrapper
+
+    return outside
 
 
 class APICallFailedException(Exception):
@@ -44,109 +72,73 @@ class TkrbApi(object):
         if target in self.subjects.keys():
             self.subjects[target].subscribe(func)
 
+    @notify_subject("set_sword")
+    @update_token
     def set_sword(self, team, index, serial):
         url = "party/setsword"
         data = {"party_no": team, "serial_id": serial, "order": index}
         ret = self._request(url, data=data).json()
+        return ret
 
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            self.subjects["set_sword"].notify(ret)
-            return ret
-        else:
-            raise APICallFailedException("設定刀劍位置")
-
+    @notify_subject("remove_sword")
+    @update_token
     def remove_sword(self, team, index, serial):
         url = "party/removesword"
         data = {"party_no": team, "order": index, "serial_id": serial}
-
         ret = self._request(url, data=data).json()
+        return ret
 
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            self.subjects["remove_sword"].notify(ret)
-            return ret
-        else:
-            raise APICallFailedException("移除刀劍位置")
-
+    @notify_subject("swap_team")
+    @update_token
     def swap_team(self, start, target):
         url = "party/partyreplacement"
         data = {"before_party_no": start, "after_party_no": target}
         ret = self._request(url, data=data).json()
+        return ret
 
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            self.subjects["swap_team"].notify(ret)
-            return ret
-        else:
-            raise APICallFailedException("交換兩隊隊伍")
-
+    @notify_subject("sally")
+    @update_token
     def sally(self):
         url = "sally"
-
         ret = self._request(url).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            self.subjects["sally"].notify(ret)
-            return ret
-        else:
-            raise APICallFailedException("Sally")
+        return ret
 
+    @update_token
     def recover_event_cost(self, event_id, total):
         url = "sally/recovercost"
-
         data = {"event_id": event_id, "num": total}
         ret = self._request(url, data=data).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("recover_event_cost")
+        return ret
 
+    @update_token
     def battle_back_to_home(self):
         url = "sally/homereturn"
-
         ret = self._request(url).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("battle_back_to_home")
+        return ret
 
+    @update_token
     def battle(self, formation):
         url = "battle/battle"
-
         data = {"formation_id": formation}
         ret = self._request(url, data=data).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("battle")
+        return ret
 
+    @update_token
     def battle_foward(self):
         url = "sally/forward"
-
         data = {"direction": "0"}
         ret = self._request(url, data=data).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("battle_foward")
+        return ret
 
+    @notify_subject("battle_start")
+    @update_token
     def battle_start(self, party, episode, field):
         url = "sally/sally"
-
         data = {"party_no": party, "episode_id": episode, "field_id": field}
         ret = self._request(url, data=data).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            self.subjects["battle_start"].notify(None)
-            return ret
-        else:
-            raise APICallFailedException("battle_start")
+        return ret
 
+    @update_token
     def event_battle_start(
         self, event_id, party, field, event_layer_id=0, item_id=0, **kwargs
     ):
@@ -164,47 +156,31 @@ class TkrbApi(object):
             data = {**data, **kwargs}
 
         ret = self._request(url, data=data).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("event_battle_start")
+        return ret
 
+    @update_token
     def event_forward(self, **kwargs):
         url = "sally/eventforward"
-
         data = kwargs
         ret = self._request(url, data=data).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("event_forward")
+        return ret
 
+    @update_token
     def forge_room(self):
         url = "forge"
-
         ret = self._request(url).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("forge_room")
+        return ret
 
+    @update_token
     def forge_complete(self, slot):
         url = "forge/complete"
-
         data = {"slot_no": slot}
         ret = self._request(url, data=data).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("forge_complete")
+        return ret
 
+    @update_token
     def forge_start(self, slot, steel, charcoal, coolant, files, use_assist=False):
         url = "forge/start"
-
         data = {
             "slot_no": slot,
             "steel": steel,
@@ -214,86 +190,54 @@ class TkrbApi(object):
             "use_assist": use_assist,
         }
         ret = self._request(url, data=data).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("forge_start")
+        return ret
 
+    @notify_subject("party_list")
+    @update_token
     def party_list(self):
         url = "party/list"
-
         ret = self._request(url).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            self.subjects["party_list"].notify(ret)
-            return ret
-        else:
-            raise APICallFailedException("party_list")
+        return ret
 
+    @update_token
     def complete_duty(self):
         url = "duty/complete"
-
         ret = self._request(url).json()
-        if not ret["status"]:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("complete_duty")
+        return ret
 
+    @update_token
     def go_conquest(self):
         url = "conquest"
-
         ret = self._request(url).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("go_conquest")
+        return ret
 
+    @update_token
     def start_conquest(self, field, party):
         url = "conquest/start"
         data = {"field_id": field, "party_no": party}
-
         ret = self._request(url, data=data).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("start_conquest")
+        return ret
 
+    @update_token
     def receive_conquest_reward(self, party):
         url = "conquest/complete"
         data = {"party_no": party}
-
         ret = self._request(url, data=data).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            return ret
-        else:
-            raise APICallFailedException("receive_conquest_reward")
+        return ret
 
+    @notify_subject("home")
+    @update_token
     def home(self):
         url = "home"
-
         ret = self._request(url).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            self.subjects["home"].notify(ret)
-            return ret
-        else:
-            raise APICallFailedException("home")
+        return ret
 
+    @notify_subject("start")
+    @update_token
     def start(self):
         url = "login/start"
-
         ret = self._request(url).json()
-        if ret["status"] == 0:
-            self.update_payload(token=ret["t"])
-            self.subjects["start"].notify(ret)
-            return ret
-        else:
-            raise APICallFailedException("home")
+        return ret
 
     def update_payload(self, cookie=None, token=None, **kwargs):
         if cookie is not None:
