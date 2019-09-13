@@ -22,7 +22,7 @@ class TkrbApi(object):
         self.payload = {"sword": cookie, "t": token}
         self.headers = {
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/72.0.3626.119 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/72.0.3626.119 Safari/537.36",
         }
 
         self.subjects = {
@@ -34,7 +34,7 @@ class TkrbApi(object):
             "remove_sword": Observable(),
             "swap_team": Observable(),
             "battle_start": Observable(),
-            "battle_end": Observable()
+            "battle_end": Observable(),
         }
 
     def __del__(self):
@@ -147,7 +147,9 @@ class TkrbApi(object):
         else:
             raise APICallFailedException("battle_start")
 
-    def event_battle_start(self, event_id, party, field, event_layer_id=0, item_id=0, **kwargs):
+    def event_battle_start(
+        self, event_id, party, field, event_layer_id=0, item_id=0, **kwargs
+    ):
         url = "sally/eventsally"
 
         data = {
@@ -155,7 +157,7 @@ class TkrbApi(object):
             "event_id": event_id,
             "party_no": party,
             "event_field_id": field,
-            "event_layer_id": event_layer_id
+            "event_layer_id": event_layer_id,
         }
 
         if kwargs:
@@ -209,7 +211,7 @@ class TkrbApi(object):
             "charcoal": charcoal,
             "coolant": coolant,
             "file": files,
-            "use_assist": use_assist
+            "use_assist": use_assist,
         }
         ret = self._request(url, data=data).json()
         if ret["status"] == 0:
@@ -304,6 +306,7 @@ class TkrbApi(object):
         full_data = None
         if data:
             from copy import deepcopy
+
             full_data = deepcopy(self.payload)
             full_data.update(data)
         else:
@@ -317,22 +320,6 @@ class TkrbApi(object):
             headers=self.headers,
             params=self.params,
             data=full_data,
-            allow_redirects=False)
+            allow_redirects=False,
+        )
         return resp
-
-
-class TkrbLoginFailException(Exception):
-    def __init__(self):
-        super().__init__(self)
-
-    def __str__(self):
-        return "登入失敗"
-
-
-class TkrbNoCommandException(Exception):
-    def __init__(self, command):
-        super().__init__(self)
-        self.command = command
-
-    def __str__(self):
-        return f"{self.command} 不存在"

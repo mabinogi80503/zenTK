@@ -17,7 +17,7 @@ def check_name_valid(func):
 
         arr = name.split(".", 1)
         if arr[0] not in subsystem_name:
-            raise ValueError(f"錯誤：子系統 \"{arr[0]}\" 非允許名單")
+            raise ValueError(f'錯誤：子系統 "{arr[0]}" 非允許名單')
         return func(self, name, value)
 
     return wrapper
@@ -95,6 +95,7 @@ class PreferenceManager(object):
 
     def load_default(self):
         from sys import exit
+
         if not preferences_file.exists():
             print("錯誤：無法讀取設定！")
             exit(1)
@@ -102,6 +103,7 @@ class PreferenceManager(object):
         self._clean_all_subsystem()
 
         import json
+
         with preferences_file.open(mode="r") as f:
             try:
                 data = json.loads(f.read())

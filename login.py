@@ -31,8 +31,8 @@ class DMMAuthenticator(BasicAuthenticator):
         }
 
         self.patterns = {
-            "dmm_token": re.compile("xhr\\.setRequestHeader\\(\"DMM_TOKEN\", \"([^\"]+)\""),
-            "token": re.compile("\"token\": \"([^\"]+)\""),
+            "dmm_token": re.compile('xhr\\.setRequestHeader\\("DMM_TOKEN", "([^"]+)"'),
+            "token": re.compile('"token": "([^"]+)"'),
         }
 
         self.session = requests.session()
@@ -42,7 +42,7 @@ class DMMAuthenticator(BasicAuthenticator):
             "Accept-Encoding": "gzip, deflate, br",
             "Host": "www.dmm.com",
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Chrome/72.0.3626.109 Safari/537.36",
-            "Upgrade-Insecure-Requests": "1"
+            "Upgrade-Insecure-Requests": "1",
         }
 
         self.dmm_id = account
@@ -71,14 +71,16 @@ class DMMAuthenticator(BasicAuthenticator):
         return self.dmm_token, self.token
 
     def _parse_ajax_token(self):
-        self.headers.update({
-            "DMM_TOKEN": self.dmm_token,
-            "X-Requested-With": "XMLHttpRequest",
-            "Origin": "https://www.dmm.com",
-            "Referer": self.urls["login"],
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "Accept": "application/json, text/javascript, */*; q=0.01",
-        })
+        self.headers.update(
+            {
+                "DMM_TOKEN": self.dmm_token,
+                "X-Requested-With": "XMLHttpRequest",
+                "Origin": "https://www.dmm.com",
+                "Referer": self.urls["login"],
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+            }
+        )
 
         payload = {"token": self.token}
 
@@ -97,11 +99,9 @@ class DMMAuthenticator(BasicAuthenticator):
         del self.headers["DMM_TOKEN"]
         del self.headers["X-Requested-With"]
 
-        self.session.cookies.update({
-            "ckcy": "1",
-            "cklg": "ja",
-            "check_open_login": "1",
-        })
+        self.session.cookies.update(
+            {"ckcy": "1", "cklg": "ja", "check_open_login": "1"}
+        )
 
         payload = {
             "token": self.ajax_token,
@@ -186,6 +186,7 @@ class DMMAuthenticator(BasicAuthenticator):
 
         text = resp.text.replace("\\", "")
         import json
+
         h1 = json.loads(resp.text[27:])
 
         if h1[loginUrl]["rc"] != 200:
@@ -203,6 +204,7 @@ class DMMAuthenticator(BasicAuthenticator):
         print("登入刀劍亂舞中...", end="")
 
         from colorama import Fore
+
         try:
             self._parse_dmm_token()
             self._parse_ajax_token()
@@ -218,7 +220,13 @@ class DMMAuthenticator(BasicAuthenticator):
             return None
         else:
             from api import TkrbApi
-            return TkrbApi(url=self.server_url, user_id=self.user_id, cookie=self.cookie_value, token=self.st)
+
+            return TkrbApi(
+                url=self.server_url,
+                user_id=self.user_id,
+                cookie=self.cookie_value,
+                token=self.st,
+            )
 
     def _request(self, url, method="GET", data=None, **kwargs):
         payload = None
@@ -241,6 +249,7 @@ class DMMAuthenticator(BasicAuthenticator):
             data=data,
             cookies=cookies,
             proxies=self.proxies,
-            allow_redirects=redirect)
+            allow_redirects=redirect,
+        )
 
         return resp

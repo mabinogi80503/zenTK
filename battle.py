@@ -15,11 +15,13 @@ def decrypte_battle_msg(data, iv):
     hex_data = bytes.fromhex(data)
 
     from Crypto.Cipher import AES
+
     cryptor = AES.new(utf8_key, AES.MODE_CBC, iv=hex_iv)
     decrypted: str = cryptor.decrypt(hex_data).decode("utf-8")
 
     import json
-    return json.loads(decrypted[:decrypted.rfind("}") + 1])
+
+    return json.loads(decrypted[: decrypted.rfind("}") + 1])
 
 
 def get_favorable_formation(enemy_formation):
@@ -176,7 +178,7 @@ class CommonBattleExecutor(AbstractBattleExecutor):
         self.finished = ret["is_finish"]
 
         # 戰鬥格
-        if (len(ret["scout"]) != 0):
+        if len(ret["scout"]) != 0:
             self._enemy_formation = ret["scout"]["formation_id"]
             return BattlePointType.BATTLE
         else:
@@ -210,13 +212,18 @@ class CommonBattleExecutor(AbstractBattleExecutor):
             return
 
         from database import static_lib
+
         points = static_lib.get_mapid_before_boss(self.episode, self.field)
         if points:
             if self._square_id in points.get_points():
                 self.finished = True
 
     def handle_battle_point(self, formation=-1):
-        best_formation = get_favorable_formation(self._enemy_formation) if formation == -1 else formation
+        best_formation = (
+            get_favorable_formation(self._enemy_formation)
+            if formation == -1
+            else formation
+        )
         ret = self.battle(best_formation)
         self.update_after_battle(ret)
 
@@ -269,7 +276,9 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
 
     @staticmethod
     def get_instrument_name(id):
-        return ["笛", "箏", "三味線", "太鼓", "鈴"][int(id) - 25] if 25 <= int(id) <= 29 else "不明"
+        return (
+            ["笛", "箏", "三味線", "太鼓", "鈴"][int(id) - 25] if 25 <= int(id) <= 29 else "不明"
+        )
 
     @staticmethod
     def get_card_name(id):
@@ -279,7 +288,15 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
             return "玉"
         else:
             try:
-                mapping = {"16": "太刀", "17": "槍", "18": "薙刀", "55": "毒矢", "56": "怪火", "59": "落穴", "61": "炮烙玉"}
+                mapping = {
+                    "16": "太刀",
+                    "17": "槍",
+                    "18": "薙刀",
+                    "55": "毒矢",
+                    "56": "怪火",
+                    "59": "落穴",
+                    "61": "炮烙玉",
+                }
                 return mapping[id]
             except KeyError:
                 print(f"遇到奇怪的 id = {id}")
@@ -288,14 +305,21 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
     def prepare(self):
         print("準備建立「秘寶之里～楽器集めの段～」活動！")
 
-        ret = self.api.event_battle_start(self.event_id, self.team_id, self.field, sword_serial_id=0)
+        ret = self.api.event_battle_start(
+            self.event_id, self.team_id, self.field, sword_serial_id=0
+        )
         if not ret["status"]:
             self.team_ref.battle_init()
         else:
             raise BattleErrorException("初始化活動戰鬥")
 
     def foward(self):
-        ret = self.api.event_forward(square_id=self._next_square_id, direction=0, transfer_square_id=0, use_item_id=0)
+        ret = self.api.event_forward(
+            square_id=self._next_square_id,
+            direction=0,
+            transfer_square_id=0,
+            use_item_id=0,
+        )
         if ret["status"]:
             raise BattleErrorException("活動前進")
 
@@ -346,11 +370,12 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
             return
 
         from prettytable import PrettyTable
+
         table = PrettyTable()
         table.field_names = ["獲得玉", "笛", "箏", "三味線", "太鼓", "鈴"]
 
-        row = [self._takeout["point"]] + \
-            [v for v in self._takeout["instrument"].values()]
+        row = [self._takeout["point"]]
+        row = row + [v for v in self._takeout["instrument"].values()]
         table.add_row(row)
 
         print(table)
@@ -359,7 +384,11 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
         self.team_ref.battle_end()
 
     def handle_battle_point(self, formation=-1):
-        best_formation = get_favorable_formation(self._enemy_formation) if formation == -1 else formation
+        best_formation = (
+            get_favorable_formation(self._enemy_formation)
+            if formation == -1
+            else formation
+        )
         self.battle(best_formation)
 
     def handle_resource_point(self):
@@ -369,7 +398,7 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
         data = self._resource_point_data
         card_id = int(data["draw"])
         if 40 <= card_id <= 52:
-            point = (card_id - 30)
+            point = card_id - 30
             self._total_point += point
             print(f"獲得 {point} 玉！")
         else:
@@ -413,7 +442,9 @@ class TsukiExecutor(AbstractBattleExecutor):
     def prepare(self):
         print("準備建立「月兔糰子」活動！")
 
-        ret = self.api.event_battle_start(self.event_id, self.team_id, self.field_id, event_layer_id=self.layer_id)
+        ret = self.api.event_battle_start(
+            self.event_id, self.team_id, self.field_id, event_layer_id=self.layer_id
+        )
         if not ret["status"]:
             self.team_ref.battle_init()
             self._next_candidate_points = ret["tsukimi"]["next"] or []
@@ -425,7 +456,9 @@ class TsukiExecutor(AbstractBattleExecutor):
 
         # 如果可以選，隨便挑一個點前進！
         count = len(self._next_candidate_points)
-        direction = self._next_candidate_points[randint(0, count - 1)] if count != 0 else 0
+        direction = (
+            self._next_candidate_points[randint(0, count - 1)] if count != 0 else 0
+        )
 
         ret = self.api.event_forward(direction=direction)
         if ret["status"]:
@@ -437,7 +470,7 @@ class TsukiExecutor(AbstractBattleExecutor):
         self.finished = data["is_finish"]
         self._next_candidate_points = data["tsukimi"]["next"] or []
 
-        if (len(data["scout"]) != 0):
+        if len(data["scout"]) != 0:
             self._enemy_formation = data["scout"]["formation_id"]
             return BattlePointType.BATTLE
         else:
@@ -467,11 +500,16 @@ class TsukiExecutor(AbstractBattleExecutor):
         self._next_candidate_points = data["tsukimi"]["next"]
 
     def handle_battle_point(self, formation=-1):
-        best_formation = get_favorable_formation(self._enemy_formation) if formation == -1 else formation
+        best_formation = (
+            get_favorable_formation(self._enemy_formation)
+            if formation == -1
+            else formation
+        )
         self.battle(best_formation)
 
     def handle_resource_point(self):
         from prettytable import PrettyTable
+
         table = PrettyTable()
         table.field_names = ["物品名稱", "數量"]
 
@@ -479,11 +517,13 @@ class TsukiExecutor(AbstractBattleExecutor):
             if int(resource["item_type"]) == 1:
                 self._dango_count += int(resource["item_num"])
                 continue
-            table.add_row([get_resource_type_name(resource["item_type"]), str(resource["item_num"])])
+            resource_name = get_resource_type_name(resource["item_type"])
+            table.add_row([resource_name, str(resource["item_num"])])
         print(table)
 
     def print_final_takeout(self):
         from prettytable import PrettyTable
+
         table = PrettyTable()
         table.field_names = ["獲得糰子"]
         table.add_row([self._dango_count])

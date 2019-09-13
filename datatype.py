@@ -68,6 +68,7 @@ class EventInfo(object):
         print(Fore.GREEN + "活動資訊更新！")
 
         from api import APICallFailedException
+
         try:
             self.money = data.get("currency").get("money")
 
@@ -99,6 +100,7 @@ class TsukiEventInfo(object):
         print(Fore.GREEN + "活動資訊更新！")
 
         from api import APICallFailedException
+
         try:
             event = list(data["event"].values())[0]
             if not event:
@@ -122,6 +124,7 @@ class Sword(object):
     """
     描述玩家身上持有的刀男之詳細訊息
     """
+
     serial_id = attr.ib()
     sword_id = attr.ib()
     name = attr.ib()
@@ -182,7 +185,8 @@ class Sword(object):
             data.get("equip_serial_id3"),
             data.get("horse_serial_id"),
             data.get("recovered_at"),
-            data.get("status"))
+            data.get("status"),
+        )
 
     @classmethod
     def from_old_one(cls, old, data):
@@ -198,7 +202,8 @@ class Sword(object):
             equipment3=data.get("equip_serial_id3"),
             horse=data.get("horse_serial_id"),
             recover_time=data.get("recovered_at"),
-            action_status=data.get("status"))
+            action_status=data.get("status"),
+        )
 
     def get_new_from_battle_report(self, user_data, data):
         for i in range(1, 4):
@@ -206,7 +211,9 @@ class Sword(object):
             if equip_serial_id is None or len(equip_serial_id) == 0:
                 continue
 
-            equip = user_data.get_equipment(equip_serial_id).get_new_from_battle_report(data[f"soldier{i}"])
+            equip = user_data.get_equipment(equip_serial_id).get_new_from_battle_report(
+                data[f"soldier{i}"]
+            )
             user_data.update_equipment(equip_serial_id, equip)
 
         new_one = attr.evolve(
@@ -218,7 +225,8 @@ class Sword(object):
             symbol=data.get("symbol"),
             horse=data.get("horse_serial_id"),
             recover_time=data.get("recovered_at"),
-            action_status=data.get("status"))
+            action_status=data.get("status"),
+        )
 
         new_one.in_battle = self.in_battle
         new_one.battle_fatigue = self.battle_fatigue
@@ -237,10 +245,14 @@ class Sword(object):
                 from common import get_datime_diff_from_now
 
                 # 三分鐘恢復一次，計算次數
-                diff = (int)(get_datime_diff_from_now(self.recover_time) / timedelta(minutes=3))
+                diff = (int)(
+                    get_datime_diff_from_now(self.recover_time) / timedelta(minutes=3)
+                )
 
-                real_fatigue = now_fatigue + diff*3  # 時間自動恢復，一次恢復三點
-                real_fatigue = min(real_fatigue, (int)(Sword.FatigueStatus.NORMAL))  # 最大不超過 normal(49)
+                # 時間自動恢復，一次恢復三點
+                real_fatigue = now_fatigue + diff * 3
+                # 最大不超過 normal(49)
+                real_fatigue = min(real_fatigue, (int)(Sword.FatigueStatus.NORMAL))
                 return real_fatigue
 
         return now_fatigue
@@ -374,7 +386,12 @@ class SwordTeam(object):
 
             # 檢查是否中傷以上或狀態不正常(比如正在遠征)
             if not sword.battleable:
-                print(Fore.YELLOW + sword.name + Fore.RESET + f"的狀態不佳({sword.status_text})")
+                print(
+                    Fore.YELLOW
+                    + sword.name
+                    + Fore.RESET
+                    + f"的狀態不佳({sword.status_text})"
+                )
                 return False
 
             if sword.red_face:
@@ -421,8 +438,8 @@ class SwordTeam(object):
 
             self.user_data.update_sword(serial_id, new)
 
-            is_leader = (idx == "1")
-            is_mvp = (mvp == slot.get("serial_id"))
+            is_leader = idx == "1"
+            is_mvp = mvp == slot.get("serial_id")
             new.calculate_battle_fatigue(rank, leader=is_leader, mvp=is_mvp)
         self.show()
 
@@ -495,7 +512,18 @@ class SwordTeam(object):
         total_level = num_sword = 0
 
         table = PrettyTable()
-        table.field_names = ["順", "Serial", "名稱", "狀態", "疲勞", "等級", "血量", "刀裝-1", "刀裝-2", "刀裝-3"]
+        table.field_names = [
+            "順",
+            "Serial",
+            "名稱",
+            "狀態",
+            "疲勞",
+            "等級",
+            "血量",
+            "刀裝-1",
+            "刀裝-2",
+            "刀裝-3",
+        ]
         table.align["名稱"] = table.align["疲勞"] = "l"
 
         for index, sword in enumerate(self.sword_refs):
@@ -517,7 +545,14 @@ class SwordTeam(object):
                 if len(equipments) < 3:
                     equipments += ["-"] * (3 - len(equipments))
 
-                row += [sword.serial_id, sword.name, sword.status_text, fatigue, sword.level, hp_text] + equipments
+                row += [
+                    sword.serial_id,
+                    sword.name,
+                    sword.status_text,
+                    fatigue,
+                    sword.level,
+                    hp_text,
+                ] + equipments
             table.add_row(row)
 
         print("平均等級：" + (f"{int(total_level / num_sword)}" if num_sword != 0 else "0"))
@@ -527,12 +562,16 @@ class SwordTeam(object):
         org_captain_serial_id = self.captain_serial_id
 
         # 如果是空刀位，設定成 101 讓他最飄花（？）而擺到後面去
-        sorted_swords = sorted(self.sword_refs, key=lambda sword: sword.fatigue if sword else 101)
+        sorted_swords = sorted(
+            self.sword_refs, key=lambda sword: sword.fatigue if sword else 101
+        )
 
         if sorted_swords[0].serial_id == org_captain_serial_id:
             return
 
-        ret = self.api.set_sword(team=self.id, index=1, serial=sorted_swords[0].serial_id)
+        ret = self.api.set_sword(
+            team=self.id, index=1, serial=sorted_swords[0].serial_id
+        )
         if ret["status"] == 0:
             print(Fore.YELLOW + f"{sorted_swords[0].name}" + Fore.RESET + " 最為疲勞，成為隊長！")
 
@@ -542,6 +581,7 @@ class Equipment(object):
     """
     表示玩家身上持有刀裝的詳細訊息
     """
+
     name = attr.ib()
     serial_id = attr.ib()
     equip_id = attr.ib()
@@ -561,9 +601,16 @@ class Equipment(object):
         except AttributeError:
             print(Fore.RED + f"新道具？ ID: {equip_id}，請聯絡管理者！")
             from sys import exit
+
             exit(1)
 
-        return cls(name, data.get("serial_id"), data.get("equip_id"), data.get("priority"), data.get("soldier"))
+        return cls(
+            name,
+            data.get("serial_id"),
+            data.get("equip_id"),
+            data.get("priority"),
+            data.get("soldier"),
+        )
 
     def get_new_from_battle_report(self, hp):
         return attr.evolve(self, soldier=hp)

@@ -29,6 +29,7 @@ class SwordData(object):
     """
     表示刀男固定的資訊
     """
+
     name = attr.ib()
 
     @classmethod
@@ -41,6 +42,7 @@ class EquipmentData(object):
     """
     表示刀裝固定的資訊
     """
+
     name = attr.ib()
     soilder = attr.ib(converter=int)
 

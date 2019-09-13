@@ -17,7 +17,7 @@ battle_config = preferences_mgr.get("battle")
 
 
 def make_datetime(timestr):
-    return datetime.fromtimestamp(mktime(strptime(timestr, '%Y-%m-%d %H:%M:%S')))
+    return datetime.fromtimestamp(mktime(strptime(timestr, "%Y-%m-%d %H:%M:%S")))
 
 
 class TkrbClient(object):
@@ -27,18 +27,10 @@ class TkrbClient(object):
         self.resources = Resources(api)
         self.event_info = TsukiEventInfo(api)
         self.teams = {
-            "1": SwordTeam(self.api,
-                           self.user_data,
-                           "1"),
-            "2": SwordTeam(self.api,
-                           self.user_data,
-                           "2"),
-            "3": SwordTeam(self.api,
-                           self.user_data,
-                           "3"),
-            "4": SwordTeam(self.api,
-                           self.user_data,
-                           "4")
+            "1": SwordTeam(self.api, self.user_data, "1"),
+            "2": SwordTeam(self.api, self.user_data, "2"),
+            "3": SwordTeam(self.api, self.user_data, "3"),
+            "4": SwordTeam(self.api, self.user_data, "4"),
         }
         self.handler = {
             "ls": self._handle_list,
@@ -107,7 +99,10 @@ class TkrbClient(object):
             print("無內番！")
             return
 
-        finished_time = make_datetime(data["finished_at"]) - timedelta(hours=1)  # JP to TW
+        jet_lag = timedelta(hours=1)
+
+        # JP to TW
+        finished_time = make_datetime(data["finished_at"]) - jet_lag
         now = datetime.now()
 
         if now >= finished_time:
@@ -154,16 +149,18 @@ class TkrbClient(object):
 
             def transfer_field_2_human(field):
                 from math import ceil
+
                 print(field)
                 field = int(field)
                 episode = int(ceil(field / 4))
-                field = field - ((episode-1) * 4)
+                field = field - ((episode - 1) * 4)
                 return f"{episode}-{field}"
 
             now = make_datetime(ret["now"])
             sorted_data = sorted(data.values(), key=lambda d: d["party_no"])
 
             from prettytable import PrettyTable
+
             table = PrettyTable()
             table.field_names = ["隊伍", "地圖", "剩餘時間"]
 
@@ -171,7 +168,11 @@ class TkrbClient(object):
                 party_no = conq["party_no"]
                 field = transfer_field_2_human(conq["field_id"])
                 finished_time = make_datetime(party_data[str(party_no)]["finished_at"])
-                need_time = str(finished_time - now) if now <= finished_time else (Fore.YELLOW + "已完成" + Fore.RESET)
+                need_time = (
+                    str(finished_time - now)
+                    if now <= finished_time
+                    else (Fore.YELLOW + "已完成" + Fore.RESET)
+                )
                 table.add_row([party_no, field, need_time])
             print(table)
         except APICallFailedException:
@@ -249,6 +250,7 @@ class TkrbClient(object):
         if not team_ref:
             return
         from battle import CommonBattleExecutor
+
         executor = CommonBattleExecutor(self.api, team_ref, episode, field, sakura)
         executor.play()
         self.home()
@@ -263,11 +265,14 @@ class TkrbClient(object):
         # executor = HitakaraBattleExecutor(self.api, team_ref, self.event_info.event_id, field)
         # executor.play()
         from battle import TsukiExecutor
-        executor = TsukiExecutor(self.api,
-                                 team_ref,
-                                 self.event_info.event_id,
-                                 self.event_info.field_id,
-                                 self.event_info.layer_field)
+
+        executor = TsukiExecutor(
+            self.api,
+            team_ref,
+            self.event_info.event_id,
+            self.event_info.field_id,
+            self.event_info.layer_field,
+        )
         executor.play()
         self.home()
 
@@ -315,7 +320,9 @@ class TkrbClient(object):
 
     def _forge_build(self, slot_no, steel, charcoal, coolant, files, use_assist=0):
         try:
-            ret = self.api.forge_start(slot_no, steel, charcoal, coolant, files, use_assist)
+            ret = self.api.forge_start(
+                slot_no, steel, charcoal, coolant, files, use_assist
+            )
         except APICallFailedException:
             print(Fore.RED + "鍛刀爐出了一些問題..." + Fore.RESET)
             return
@@ -352,15 +359,12 @@ class TkrbClient(object):
     def _forge_show(self, forge, now):
         from time import mktime, strptime
         from datetime import datetime
-
-        def make_datetime(timestr):
-            return datetime.fromtimestamp(mktime(strptime(timestr, '%Y-%m-%d %H:%M:%S')))
-
         from database import static_lib
 
         now = make_datetime(now)
 
         from prettytable import PrettyTable
+
         table = PrettyTable()
         table.field_names = ["鍛刀位", "名稱", "剩餘鍛造時間"]
 
@@ -368,7 +372,11 @@ class TkrbClient(object):
             slot_no = data["slot_no"]
             sword_name = static_lib.get_sword(data["sword_id"]).name
             finished_time = make_datetime(data["finished_at"])
-            need_time = str(finished_time - now) if now <= finished_time else (Fore.YELLOW + "已完成" + Fore.RESET)
+            need_time = (
+                str(finished_time - now)
+                if now <= finished_time
+                else (Fore.YELLOW + "已完成" + Fore.RESET)
+            )
 
             table.add_row([slot_no, sword_name, need_time])
 
@@ -380,6 +388,7 @@ class TkrbClient(object):
 
         if command == "exit":
             from sys import exit
+
             exit(0)
 
         if command == "clear":
@@ -406,6 +415,7 @@ class TkrbClient(object):
         interval = int(battle_config.get("battle_interval"))
 
         from time import sleep
+
         for count in range(times):
             self.battle(team_id, episode, field)
 
@@ -419,6 +429,7 @@ class TkrbClient(object):
         interval = int(battle_config.get("battle_interval"))
 
         from time import sleep
+
         for count in range(times):
             self.event_battle(team_id)
 
@@ -611,7 +622,14 @@ class TkrbExecutor(NodeVisitor):
 
         _, steel, _, charcoal, _, coolant, _, files, *_ = children[2:]
         if kind == "-m":
-            self.options.update({"steel": steel, "charcoal": charcoal, "coolant": coolant, "files": files})
+            self.options.update(
+                {
+                    "steel": steel,
+                    "charcoal": charcoal,
+                    "coolant": coolant,
+                    "files": files,
+                }
+            )
             return node
 
         return node
@@ -672,7 +690,7 @@ class TkrbExecutor(NodeVisitor):
             self.options["action"] = "start"
             a = int(self.options["episode"])
             b = int(self.options["field"])
-            self.options["field_id"] = str((a-1) * 4 + b)
+            self.options["field_id"] = str((a - 1) * 4 + b)
             return node
 
         if kind == "-p":
@@ -705,6 +723,7 @@ class TkrbExecutor(NodeVisitor):
         self.method = node.expr_name
 
         from os import system
+
         system("cls")  # windows / osx
         system("clear")  # linux
         return node
@@ -721,7 +740,7 @@ def execute(client, command):
     try:
         root = grammer.parse(command)
     except ParseError as err:
-        part = command[err.pos:err.pos + 10]
+        part = command[err.pos : err.pos + 10]
         print(f"Syntax error near '{part}'")
     else:
         visitor = TkrbExecutor()
