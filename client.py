@@ -357,8 +357,6 @@ class TkrbClient(object):
         print("獲得刀劍：" + Fore.YELLOW + name + Fore.RESET)
 
     def _forge_show(self, forge, now):
-        from time import mktime, strptime
-        from datetime import datetime
         from database import static_lib
 
         now = make_datetime(now)

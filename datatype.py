@@ -5,6 +5,10 @@ import attr
 from colorama import Back, Fore
 from prettytable import PrettyTable
 
+from preferences import preferences_mgr
+
+battle_cfg = preferences_mgr.get("battle")
+
 
 def filter_by(key):
     def decorator(func):
@@ -441,7 +445,9 @@ class SwordTeam(object):
             is_leader = idx == "1"
             is_mvp = mvp == slot.get("serial_id")
             new.calculate_battle_fatigue(rank, leader=is_leader, mvp=is_mvp)
-        self.show()
+
+        if battle_cfg.get("show_team_info_on_battle", False):
+            self.show()
 
     def clear(self):
         for i in range(6, 0, -1):

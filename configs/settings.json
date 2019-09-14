@@ -1,5 +1,6 @@
 {
     "system.debug": false,
     "battle.grind_mode": true,
-    "battle.battle_interval": 3
+    "battle.battle_interval": 60,
+    "battle.show_team_info_on_battle": false
 }

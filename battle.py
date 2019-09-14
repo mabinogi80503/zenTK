@@ -242,6 +242,7 @@ class CommonBattleExecutor(AbstractBattleExecutor):
 
             while True:
                 if not self.team_ref.can_foward_in_battle():
+                    self.team_ref.show()
                     break
 
                 next_point_type = self.foward()
