@@ -1,14 +1,32 @@
-class Observable(object):
+class Subscriber(object):
+    def __init__(self, name, handler):
+        self.name = name
+        self.handler = handler
+
+
+class Publisher(object):
     def __init__(self):
-        self._observers = []
+        self._events = {}
 
-    def subscribe(self, oberser):
-        if oberser not in self._observers:
-            self._observers.append(oberser)
+    def create_event(self, name):
+        if name in self._events.keys():
+            return None
+        self._events[name] = {}
+        return self._events[name]
 
-    def unsubscribe(self, oberser):
-        self._observers.remove(oberser)
+    def boardcast(self, event, data):
+        subscribers = self._events.get(event, None)
+        for s in subscribers.values():
+            s.handler(data)
 
-    def notify(self, event=None):
-        for oberser in self._observers:
-            oberser(event)
+    def registe(self, event, subscriber):
+        subscribers = self._events.get(event, None)
+        if subscribers is None:
+            subscribers = self.create_event(event)
+        subscribers.update({subscriber.name: subscriber})
+
+    def unregiste(self, event, subscriber):
+        subscribers = self._events.get(event, None)
+        if subscribers is None:
+            return None
+        del subscribers[subscriber.name]

@@ -4,6 +4,7 @@ from functools import wraps
 import attr
 from colorama import Back, Fore
 from prettytable import PrettyTable
+from notification import Subscriber
 
 from preferences import preferences_mgr
 
@@ -35,8 +36,7 @@ class Resources(object):
         self.steel = 0  # 玉鋼
         self.coolant = 0  # 冷卻材
         self.file = 0  # 砥石
-
-        self.api.subscribe("start", self.update_from_json)
+        self.api.registe("start", Subscriber("Resource", self.update_from_json))
 
     @filter_by(key="resource")
     def update_from_json(self, resource):
@@ -66,7 +66,7 @@ class EventInfo(object):
     have_event = attr.ib(default=False)
 
     def __attrs_post_init__(self):
-        self.api.subscribe("sally", self.update_from_sally)
+        self.api.registe("sally", Subscriber("EventInfo", self.update_from_sally))
 
     def update_from_sally(self, data):
         print(Fore.GREEN + "活動資訊更新！")
@@ -98,7 +98,7 @@ class TsukiEventInfo(object):
     layer_field = attr.ib(init=False)
 
     def __attrs_post_init__(self):
-        self.api.subscribe("sally", self.update_from_sally)
+        self.api.registe("sally", Subscriber("TsukiEventInfo", self.update_from_sally))
 
     def update_from_sally(self, data):
         print(Fore.GREEN + "活動資訊更新！")
@@ -349,12 +349,11 @@ class SwordTeam(object):
         self.swords = {}
         self.status = 0
 
-        self.api.subscribe("party_list", self.build)
-        self.api.subscribe("set_sword", self.update_from_set_sword)
-        self.api.subscribe("remove_sword", self.handle_remove_sword)
-        self.api.subscribe("swap_team", self.handle_swap_team)
-        # self.api.subscribe("battle_start", self.battle_init)
-        # self.api.subscribe("battle_end", self.battle_end)
+        sub_name = f"SwordTeam{self.id}"
+        self.api.registe("party_list", Subscriber(sub_name, self.build))
+        self.api.registe("set_sword", Subscriber(sub_name, self.update_from_set_sword))
+        self.api.registe("remove_sword", Subscriber(sub_name, self.handle_remove_sword))
+        self.api.registe("swap_team", Subscriber(sub_name, self.handle_swap_team))
 
     @property
     def captain_serial_id(self):

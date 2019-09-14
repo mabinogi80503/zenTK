@@ -6,6 +6,7 @@ from colorama import Fore
 
 from common import singleton
 from datatype import Sword, Equipment
+from notification import Subscriber
 
 
 @attr.s
@@ -88,8 +89,9 @@ class UserLibrary(object):
         # Serial ID 映射到對應的實體
         self.sword_map = {}
         self.equipment_map = {}
-
-        self.api.subscribe("party_list", self.update_from_party_list)
+        self.api.registe(
+            "party_list", Subscriber("UserLibrary", self.update_from_party_list)
+        )
 
     def get_sword(self, id):
         return self.sword_map.get(id)

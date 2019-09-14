@@ -2,7 +2,7 @@ from functools import wraps
 
 import requests
 
-from notification import Observable
+from notification import Publisher
 
 
 def update_token(func):
@@ -23,7 +23,7 @@ def notify_subject(name):
         def wrapper(self, *args, **kwargs):
             ret = func(self, *args, **kwargs)
             if ret["status"] == 0:
-                self.subjects[name].notify(ret)
+                self.boardcast(name, ret)
             return ret
 
         return wrapper
@@ -40,8 +40,10 @@ class APICallFailedException(Exception):
         return f"API 呼叫者 {self.msg} 失敗"
 
 
-class TkrbApi(object):
+class TkrbApi(Publisher):
     def __init__(self, url, user_id, cookie, token):
+        super().__init__()
+
         self.session = requests.session()
         self.server_url = url
         self.user_id = user_id
@@ -53,24 +55,18 @@ class TkrbApi(object):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/72.0.3626.119 Safari/537.36",
         }
 
-        self.subjects = {
-            "start": Observable(),
-            "home": Observable(),
-            "party_list": Observable(),
-            "sally": Observable(),
-            "set_sword": Observable(),
-            "remove_sword": Observable(),
-            "swap_team": Observable(),
-            "battle_start": Observable(),
-            "battle_end": Observable(),
-        }
+        self.create_event("start")
+        self.create_event("home")
+        self.create_event("party_list")
+        self.create_event("sally")
+        self.create_event("set_sword")
+        self.create_event("remove_sword")
+        self.create_event("swap_team")
+        self.create_event("battle_start")
+        self.create_event("battle_end")
 
     def __del__(self):
         self.session.close()
-
-    def subscribe(self, target, func):
-        if target in self.subjects.keys():
-            self.subjects[target].subscribe(func)
 
     @notify_subject("set_sword")
     @update_token
