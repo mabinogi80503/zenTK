@@ -32,15 +32,6 @@ class TkrbClient(object):
             "3": SwordTeam(self.api, self.user_data, "3"),
             "4": SwordTeam(self.api, self.user_data, "4"),
         }
-        self.handler = {
-            "ls": self._handle_list,
-            "battle": self._handle_battle,
-            "event": self._handle_event,
-            "sakura": self._handle_sakura,
-            "forge": self._handle_forge,
-            "swap": self._handle_swap,
-            "conquest": self._handle_conquest,
-        }
         self.init_first()
 
     @classmethod
@@ -112,7 +103,7 @@ class TkrbClient(object):
                 print(Fore.RED + "內番看起來有一些錯誤？時間誤判嗎？" + Fore.RESET)
                 return
 
-    def _handle_conquest(self, options):
+    def handle_conquest(self, options):
         action = options.get("action", None)
 
         if action == "ls":
@@ -384,20 +375,24 @@ class TkrbClient(object):
         if command is None:
             return
 
-        if command == "exit":
-            from sys import exit
+        method = getattr(self, f"handle_" + command)
+        if method is None:
+            print(f"Command {command} is not found!")
+            return None
+        method(options)
 
-            exit(0)
+    def handle_exit(self, options):
+        from sys import exit
 
-        if command == "clear":
-            return
+        exit(0)
 
-        try:
-            self.handler[command](options)
-        except KeyError as err:
-            print(f"Command {err} is not found!")
+    def handle_clear(self, options):
+        from os import system
 
-    def _handle_list(self, options):
+        system("cls")  # windows / osx
+        system("clear")  # linux
+
+    def handle_ls(self, options):
         team = options.get("-p", "*")
 
         if team == "*":
@@ -405,7 +400,7 @@ class TkrbClient(object):
         else:
             self.list_team(team_id=team)
 
-    def _handle_battle(self, options):
+    def handle_battle(self, options):
         times = int(options["-t"])
         team_id = int(options["-p"])
         episode = int(options["episode"])
@@ -421,7 +416,7 @@ class TkrbClient(object):
                 print(f"等待 {interval} 秒...")
                 sleep(interval)
 
-    def _handle_event(self, options):
+    def handle_event(self, options):
         times = int(options["-t"])
         team_id = int(options["-p"])
         interval = int(battle_config.get("battle_interval"))
@@ -435,7 +430,7 @@ class TkrbClient(object):
                 print(f"等待 {interval} 秒...")
                 sleep(interval)
 
-    def _handle_sakura(self, options):
+    def handle_sakura(self, options):
         team_id = int(options["-p"])
         episode = int(options["episode"])
         field = int(options["field"])
@@ -446,7 +441,7 @@ class TkrbClient(object):
         else:
             self.team_sakura(episode, field, team_id)
 
-    def _handle_forge(self, options):
+    def handle_forge(self, options):
         action = options.get("action", None)
 
         if not action:
@@ -475,7 +470,7 @@ class TkrbClient(object):
             self._forge_build(slot, steel, charcoal, coolant, files, quick)
             return
 
-    def _handle_swap(self, options):
+    def handle_swap(self, options):
         action = options.get("action", None)
 
         if not action:
@@ -719,11 +714,6 @@ class TkrbExecutor(NodeVisitor):
 
     def visit_clear(self, node, children):
         self.method = node.expr_name
-
-        from os import system
-
-        system("cls")  # windows / osx
-        system("clear")  # linux
         return node
 
     def generic_visit(self, node, children):
