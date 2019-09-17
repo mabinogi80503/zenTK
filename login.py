@@ -174,6 +174,12 @@ class DMMAuthenticator(BasicAuthenticator):
         resp = self._request(self.urls["request"], method="POST", data=payload)
         text = resp.text.replace("\\", "")
 
+        mch = re.search(r"\"status\":(\d+)", text)
+        if mch:
+            status = int(mch.group(1))
+            if status == 97:
+                raise LoginFailException("伺服器可能在維修中！")
+
         mch = re.search(r"\"url\":\"([^\"]+)\"", text)
         if not mch:
             raise LoginFailException("解析伺服器位址失敗")
