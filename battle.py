@@ -71,7 +71,7 @@ def check_new_sword(data):
         print(Fore.YELLOW + "獲得一把沒有在資料庫內的刀！請聯絡專案作者更新資料庫！")
 
 
-class BattleErrorException(Exception):
+class BattleError(Exception):
     def __init__(self, msg):
         super().__init__(self)
         self.msg = msg
@@ -80,7 +80,7 @@ class BattleErrorException(Exception):
         return f"戰鬥發生錯誤 ({self.msg})"
 
 
-class AbstractBattleExecutor(object, metaclass=ABCMeta):
+class BattleExecutorBase(object, metaclass=ABCMeta):
     def __init__(self, api, team):
         self.api = api
         self.team_ref = team
@@ -143,7 +143,7 @@ class BattlePointType(Enum):
     MATERIAL = 2
 
 
-class CommonBattleExecutor(AbstractBattleExecutor):
+class CommonBattleExecutor(BattleExecutorBase):
     def __init__(self, api, team, episode_id, field_id, sakura=False, *args, **kwargs):
         super().__init__(api, team)
         self.episode = int(episode_id)
@@ -159,7 +159,7 @@ class CommonBattleExecutor(AbstractBattleExecutor):
         if not ret["status"]:
             self.team_ref.battle_init()
         else:
-            raise BattleErrorException("初始化戰鬥")
+            raise BattleError("初始化戰鬥")
 
     def foward(self):
         """
@@ -169,7 +169,7 @@ class CommonBattleExecutor(AbstractBattleExecutor):
         ret = self.api.battle_foward()
 
         if ret["status"]:
-            raise BattleErrorException("戰鬥前進")
+            raise BattleError("戰鬥前進")
 
         # 紀錄走到的地圖格號碼
         self._square_id = ret["square_id"]
@@ -189,7 +189,7 @@ class CommonBattleExecutor(AbstractBattleExecutor):
         ret = self.api.battle(formation)
 
         if ret["status"]:
-            raise BattleErrorException("戰鬥主函數")
+            raise BattleError("戰鬥主函數")
 
         return decrypte_battle_msg(ret["data"], ret["iv"])
 
@@ -199,7 +199,7 @@ class CommonBattleExecutor(AbstractBattleExecutor):
         if not ret["status"]:
             self.team_ref.battle_end()
         else:
-            raise BattleErrorException("返回本丸")
+            raise BattleError("返回本丸")
 
     def update_after_battle(self, data):
         super().update_after_battle(data)
@@ -257,12 +257,12 @@ class CommonBattleExecutor(AbstractBattleExecutor):
                     break
 
             self.back_to_home()
-        except BattleErrorException as battle_err:
+        except BattleError as battle_err:
             print(battle_err)
 
 
 # 秘寶之里～楽器集めの段～
-class HitakaraBattleExecutor(AbstractBattleExecutor):
+class HitakaraBattleExecutor(BattleExecutorBase):
     def __init__(self, api, team, event_id, field_id):
         super().__init__(api, team)
         self.event_id = int(event_id)
@@ -312,7 +312,7 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
         if not ret["status"]:
             self.team_ref.battle_init()
         else:
-            raise BattleErrorException("初始化活動戰鬥")
+            raise BattleError("初始化活動戰鬥")
 
     def foward(self):
         ret = self.api.event_forward(
@@ -322,7 +322,7 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
             use_item_id=0,
         )
         if ret["status"]:
-            raise BattleErrorException("活動前進")
+            raise BattleError("活動前進")
 
         return self.update_info_from_forward(ret)
 
@@ -341,7 +341,7 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
         ret = self.api.battle(formation)
 
         if ret["status"]:
-            raise BattleErrorException("活動戰鬥主函數")
+            raise BattleError("活動戰鬥主函數")
 
         decrypted_data = decrypte_battle_msg(ret["data"], ret["iv"])
         self.update_after_battle(decrypted_data)
@@ -352,7 +352,7 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
         gimmick = data["gimmick"]
 
         if not gimmick:
-            raise BattleErrorException("Gimmick 遺失！")
+            raise BattleError("Gimmick 遺失！")
 
         self._battle_point = int(gimmick["bonus"])
         self._total_point += self._battle_point
@@ -424,12 +424,12 @@ class HitakaraBattleExecutor(AbstractBattleExecutor):
                     break
 
             self.back_to_home()
-        except BattleErrorException as battle_err:
+        except BattleError as battle_err:
             print(battle_err)
 
 
 # 月兔糰子
-class TsukiExecutor(AbstractBattleExecutor):
+class TsukiExecutor(BattleExecutorBase):
     def __init__(self, api, team, event_id, field_id, layer_id):
         super().__init__(api, team)
         self.event_id = int(event_id)
@@ -450,7 +450,7 @@ class TsukiExecutor(AbstractBattleExecutor):
             self.team_ref.battle_init()
             self._next_candidate_points = ret["tsukimi"]["next"] or []
         else:
-            raise BattleErrorException("初始化活動戰鬥")
+            raise BattleError("初始化活動戰鬥")
 
     def foward(self):
         from random import randint
@@ -463,7 +463,7 @@ class TsukiExecutor(AbstractBattleExecutor):
 
         ret = self.api.event_forward(direction=direction)
         if ret["status"]:
-            raise BattleErrorException("活動前進")
+            raise BattleError("活動前進")
         return self.update_info_from_forward(ret)
 
     def update_info_from_forward(self, data):
@@ -482,7 +482,7 @@ class TsukiExecutor(AbstractBattleExecutor):
         ret = self.api.battle(formation)
 
         if ret["status"]:
-            raise BattleErrorException("活動戰鬥主函數")
+            raise BattleError("活動戰鬥主函數")
 
         decrypted_data = decrypte_battle_msg(ret["data"], ret["iv"])
         self.update_after_battle(decrypted_data)
@@ -552,5 +552,5 @@ class TsukiExecutor(AbstractBattleExecutor):
                     break
 
             self.back_to_home()
-        except BattleErrorException as battle_err:
+        except BattleError as battle_err:
             print(battle_err)
