@@ -261,6 +261,116 @@ class CommonBattleExecutor(BattleExecutorBase):
             print(battle_err)
 
 
+def check_and_get_sally_data(api):
+    from api import APICallFailedException
+
+    try:
+        data = api.sally()
+    except APICallFailedException:
+        print(Fore.RED + "存取 sally 失敗！")
+        return None
+    else:
+        return data
+
+
+class EventInfoBase(object):
+    def __init__(self, event_name=None):
+        self.name = event_name if event_name else "未知活動名稱"
+        self._event_id = -1
+        self._field_id = -1
+        self.money = 0  # 小判數
+
+    @property
+    def evnet_id(self):
+        return self._event_id
+
+    @evnet_id.setter
+    def event_id(self, value):
+        if value is None:
+            return None
+        if not isinstance(value, int):
+            value = int(value)
+        self._event_id = value
+
+    @property
+    def field_id(self):
+        return self._field_id
+
+    @field_id.setter
+    def field_id(self, value):
+        if value is None:
+            return None
+        if not isinstance(value, int):
+            value = int(value)
+        self._field_id = value
+
+
+class HitakaraEventInfo(EventInfoBase):
+    def __init__(self, api):
+        super().__init__("秘寶之里～楽器集めの段")
+        self.api = api
+        self.reset_passcard = 0  # 現在持有的手形數
+        self.rest_passcard_max = 3  # 現在可用的最大手形數
+
+    @classmethod
+    def create(cls, api):
+        data = check_and_get_sally_data()
+        if data is None:
+            return None
+
+        event = list(data.get("event").values())[0]
+        if event is None:
+            print("無活動！")
+            return None
+
+        event_info = cls()
+        event_info.money = data.get("currency").get("money")
+        event_info.event_id = event.get("event_id")
+        event_info.field_id = list(event["field"].values())[0]["field_id"]
+        event_info.rest_passcard = event.get("cost").get("rest")
+        event_info.rest_passcard_max = event.get("cost").get("max")
+        return event_info
+
+
+class TsukiEventInfo(object):
+    def __init__(self, api):
+        super().__init__("月兔糰子")
+        self.api = api
+        self._layer_field = -1
+        self.collect_item = {}
+
+    @property
+    def layer_field(self):
+        return self._layer_field
+
+    @layer_field.setter
+    def layer_field(self, value):
+        if value is None:
+            return None
+        if not isinstance(value, int):
+            value = int(value)
+        self._layer_field = value
+
+    @classmethod
+    def create(cls, api):
+        data = check_and_get_sally_data()
+        if data is None:
+            return None
+
+        event = list(data.get("event").values())[0]
+        if event is None:
+            print("無活動！")
+            return None
+
+        event_info = cls()
+        event_info.event_id = event["event_id"]
+        event_info.field_id = list(event["field"].values())[0]["field_id"]
+        event_info.layer_field = list(event["field"].values())[0]["layer_num"]
+        for key, item in event["collection_item"].items():
+            event_info.collect_item[str(key)] = item["num"]
+        return event_info
+
+
 # 秘寶之里～楽器集めの段～
 class HitakaraBattleExecutor(BattleExecutorBase):
     def __init__(self, api, team, event_id, field_id):
