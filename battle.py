@@ -678,3 +678,12 @@ class TsukiExecutor(BattleExecutorBase):
             self.back_to_home()
         except BattleError as battle_err:
             print(battle_err)
+
+
+def new_event(name, api, team):
+    if name == "hitakara":
+        return HitakaraBattleExecutor(api, team)
+    if name == "tsuki":
+        return TsukiExecutor(api, team)
+
+    return None

@@ -247,23 +247,14 @@ class TkrbClient(object):
         self.home()
 
     def event_battle(self, team_id, field=1):
+        from battle import new_event
+
+        executor = new_event("tsuki")
+
         team_ref = self._check_before_battle(team_id, event=True)
         if not team_ref:
             return
 
-        # 開始戰鬥
-        # from battle import HitakaraBattleExecutor
-        # executor = HitakaraBattleExecutor(self.api, team_ref, self.event_info.event_id, field)
-        # executor.play()
-        from battle import TsukiExecutor
-
-        executor = TsukiExecutor(
-            self.api,
-            team_ref,
-            self.event_info.event_id,
-            self.event_info.field_id,
-            self.event_info.layer_field,
-        )
         executor.play()
         self.home()
 
