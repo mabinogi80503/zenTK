@@ -312,6 +312,9 @@ class HitakaraEventInfo(EventInfoBase):
         self.reset_passcard = 0  # 現在持有的手形數
         self.rest_passcard_max = 3  # 現在可用的最大手形數
 
+    def check_passcard(self):
+        return self.reset_passcard != 0
+
     @classmethod
     def create(cls, api):
         data = check_and_get_sally_data()
@@ -371,12 +374,22 @@ class TsukiEventInfo(object):
         return event_info
 
 
+def new_event_info(event_name, api):
+    if event_name == "hitakara":
+        return HitakaraEventInfo.create(api)
+    elif event_name == "tsuki":
+        return TsukiEventInfo.create(api)
+
+    raise ValueError(f"{event_name} 錯誤！")
+
+
 # 秘寶之里～楽器集めの段～
 class HitakaraBattleExecutor(BattleExecutorBase):
-    def __init__(self, api, team, event_id, field_id):
+    def __init__(self, api, team):
         super().__init__(api, team)
-        self.event_id = int(event_id)
-        self.field = int(field_id)
+        self.event_info = new_event_info("hitakara")
+        self.event_id = self.event_info.event_id
+        self.field = self.event_info.field_id
         self._next_square_id = 1
         self._is_battle_card = False
         self._enemy_formation = -1
@@ -540,11 +553,12 @@ class HitakaraBattleExecutor(BattleExecutorBase):
 
 # 月兔糰子
 class TsukiExecutor(BattleExecutorBase):
-    def __init__(self, api, team, event_id, field_id, layer_id):
+    def __init__(self, api, team):
         super().__init__(api, team)
-        self.event_id = int(event_id)
-        self.field_id = int(field_id)
-        self.layer_id = int(layer_id)
+        self.event_info = new_event_info("tsuki")
+        self.event_id = self.event_info.event_id
+        self.field = self.event_info.field_id
+        self.layer_id = self.event_info.layer_id
         self._next_candidate_points = []
         self._enemy_formation = -1
         self._resource_point_data = None
