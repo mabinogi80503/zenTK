@@ -188,12 +188,12 @@ class TkrbClient(object):
         #     if not self.event_info.have_event:
         #         return None
 
-            # if self.event_info.rest_passcard == 0:
-            #     try:
-            #         self.recover_the_passcard(self.event_info.event_id, self.event_info.rest_passcard_max)
-            #     except APICallFailedException as api_failed_error:
-            #         print(api_failed_error)
-            #         return None
+        # if self.event_info.rest_passcard == 0:
+        #     try:
+        #         self.recover_the_passcard(self.event_info.event_id, self.event_info.rest_passcard_max)
+        #     except APICallFailedException as api_failed_error:
+        #         print(api_failed_error)
+        #         return None
 
         team_ref = self._check_team_status(team_id)
         return team_ref
@@ -484,12 +484,26 @@ class TkrbClient(object):
             self.swap_teams(team1, team2)
             return
 
+    def handle_play(self, options):
+        file = options.get("filename", None)
+        with open(file, "r") as f:
+            content = f.readlines()
+        for command in content:
+            print(command.strip())
+            execute(self, command.strip())
+
+    def handle_sleep(self, options):
+        sleep_interval = int(options.get("sleeptime", 0))
+        from time import sleep
+
+        sleep(sleep_interval)
+
 
 grammer = r"""
     command = mutable / immutable
 
-    immutable = exit / clear / ls / _
-    mutable = battle / event / sakura / forge / swap / conquest
+    immutable = exit / clear / ls / sleep / _
+    mutable = battle / event / sakura / forge / swap / conquest / play
 
     string = ~r"\w+"
     integer = ~r"\d+"
@@ -518,6 +532,12 @@ grammer = r"""
     clear = _ "clear" _
     exit = _ "exit" _
     _ = ~r"\s*"
+
+    play_opts = ~r"[\w\-\.@#]+"
+    play = _ "play" _ play_opts _
+
+    sleep = _ "sleep" _ integer _
+
 """
 
 grammer = Grammar(grammer)
@@ -704,6 +724,19 @@ class TkrbExecutor(NodeVisitor):
 
     def visit_clear(self, node, children):
         self.method = node.expr_name
+        return node
+
+    def visit_play(self, node, children):
+        self.method = "play"
+        return node
+
+    def visit_play_opts(self, node, children):
+        self.options["filename"] = node.text
+        return node.text
+
+    def visit_sleep(self, node, children):
+        self.method = "sleep"
+        self.options["sleeptime"] = children[3]
         return node
 
     def generic_visit(self, node, children):
