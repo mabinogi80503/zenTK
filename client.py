@@ -8,7 +8,7 @@ from parsimonious.nodes import NodeVisitor
 
 from api import APICallFailedException
 from database import UserLibrary
-from datatype import EventInfo, Resources, SwordTeam, TsukiEventInfo
+from datatype import Resources, SwordTeam
 from login import DMMAuthenticator
 from preferences import preferences_mgr
 
@@ -25,7 +25,6 @@ class TkrbClient(object):
         self.api = api
         self.user_data = UserLibrary(self.api)
         self.resources = Resources(api)
-        self.event_info = TsukiEventInfo(api)
         self.teams = {
             "1": SwordTeam(self.api, self.user_data, "1"),
             "2": SwordTeam(self.api, self.user_data, "2"),
@@ -184,10 +183,10 @@ class TkrbClient(object):
         self.api.party_list()
 
         # 若是活動，先檢查手形
-        if event:
-            self.api.sally()
-            if not self.event_info.have_event:
-                return None
+        # if event:
+        #     self.api.sally()
+        #     if not self.event_info.have_event:
+        #         return None
 
             # if self.event_info.rest_passcard == 0:
             #     try:
