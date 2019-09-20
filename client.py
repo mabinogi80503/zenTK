@@ -86,7 +86,8 @@ class TkrbClient(object):
 
     def _check_duty(self, data):
         if data is None or len(data) == 0:
-            print("無內番！")
+            if app_config.get("debug"):
+                print("無內番！")
             return
 
         jet_lag = timedelta(hours=1)
