@@ -239,12 +239,14 @@ class TkrbClient(object):
     def battle(self, team_id, episode, field, sakura=False):
         team_ref = self._check_before_battle(team_id)
         if not team_ref:
-            return
+            return None
+
         from battle import CommonBattleExecutor
 
         executor = CommonBattleExecutor(self.api, team_ref, episode, field, sakura)
-        executor.play()
+        status = executor.play()
         self.home()
+        return status
 
     def event_battle(self, team_id, field=1):
         from battle import new_event
@@ -397,11 +399,26 @@ class TkrbClient(object):
         episode = int(options["episode"])
         field = int(options["field"])
         interval = int(battle_config.get("battle_interval"))
+        team_bad_waittime = int(battle_config.get("bad_status_interval"))
 
         from time import sleep
+        from battle import BattleResult
 
         for count in range(times):
-            self.battle(team_id, episode, field)
+            status = self.battle(team_id, episode, field)
+
+            if status is None:
+                return None
+
+            if status == BattleResult.BE_DEFEATED:
+                print(status.value)
+                return None
+
+            if status == BattleResult.TEAM_STATUS_BAD:
+                print(status.value)
+                print(f"等待{team_bad_waittime}秒後恢復...")
+                sleep(team_bad_waittime)
+                continue
 
             if interval > 0.0 and count < times - 1:
                 print(f"等待 {interval} 秒...")

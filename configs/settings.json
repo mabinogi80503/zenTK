@@ -2,5 +2,6 @@
     "system.debug": false,
     "battle.grind_mode": true,
     "battle.battle_interval": 60,
+    "battle.bad_status_interval": 300,
     "battle.show_team_info_on_battle": false
 }

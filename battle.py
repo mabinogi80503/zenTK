@@ -71,6 +71,12 @@ def check_new_sword(data):
         print(Fore.YELLOW + "獲得一把沒有在資料庫內的刀！請聯絡專案作者更新資料庫！")
 
 
+class BattleResult(Enum):
+    NORMAL = "正常結束"
+    BE_DEFEATED = "戰敗"
+    TEAM_STATUS_BAD = "隊伍狀況不佳"
+
+
 class BattleError(Exception):
     def __init__(self, msg):
         super().__init__(self)
@@ -86,6 +92,7 @@ class BattleExecutorBase(object, metaclass=ABCMeta):
         self.team_ref = team
         self.team_id = team.id
         self.finished = False
+        self.status = BattleResult.NORMAL
 
     # 創造一個活動
     @abstractmethod
@@ -126,6 +133,9 @@ class BattleExecutorBase(object, metaclass=ABCMeta):
         mvp_serial = data["mvp"]
         resutl_team_data = data["player"]["party"]["slot"]
         self.team_ref.update_from_battle_report(rank, mvp_serial, resutl_team_data)
+
+        if rank == "6":
+            self.status = BattleResult.BE_DEFEATED
 
     def update_after_battle(self, data):
         if data is None or not data["result"]:
@@ -242,7 +252,7 @@ class CommonBattleExecutor(BattleExecutorBase):
 
             while True:
                 if not self.team_ref.can_foward_in_battle():
-                    self.team_ref.show()
+                    self.status = BattleResult.TEAM_STATUS_BAD
                     break
 
                 next_point_type = self.foward()
@@ -253,12 +263,19 @@ class CommonBattleExecutor(BattleExecutorBase):
 
                 self.check_grind_finish()
 
-                if self.finished or self.sakura:
+                if (
+                    self.finished
+                    or self.sakura
+                    or self.status is not BattleResult.NORMAL
+                ):
                     break
 
+            self.team_ref.show()
             self.back_to_home()
         except BattleError as battle_err:
             print(battle_err)
+        else:
+            return self.status
 
 
 def check_and_get_sally_data(api):
@@ -466,8 +483,7 @@ class HitakaraBattleExecutor(BattleExecutorBase):
         if ret["status"]:
             raise BattleError("活動戰鬥主函數")
 
-        decrypted_data = decrypte_battle_msg(ret["data"], ret["iv"])
-        self.update_after_battle(decrypted_data)
+        return decrypte_battle_msg(ret["data"], ret["iv"])
 
     def update_after_battle(self, data):
         super().update_after_battle(data)
@@ -513,7 +529,8 @@ class HitakaraBattleExecutor(BattleExecutorBase):
             if formation == -1
             else formation
         )
-        self.battle(best_formation)
+        ret = self.battle(best_formation)
+        self.update_after_battle(ret)
 
     def handle_resource_point(self):
         if len(self._resource_point_data) == 0:
@@ -534,6 +551,7 @@ class HitakaraBattleExecutor(BattleExecutorBase):
 
             while True:
                 if not self.team_ref.can_foward_in_battle():
+                    self.status = BattleResult.TEAM_STATUS_BAD
                     break
 
                 point_type = self.foward()
@@ -542,13 +560,16 @@ class HitakaraBattleExecutor(BattleExecutorBase):
                 else:
                     self.handle_resource_point()
 
-                if self.finished:
+                if self.finished or self.status is not BattleResult.NORMAL:
                     self.print_final_takeout()
                     break
 
+            self.team_ref.show()
             self.back_to_home()
         except BattleError as battle_err:
             print(battle_err)
+        else:
+            return self.status
 
 
 # 月兔糰子
@@ -608,8 +629,7 @@ class TsukiExecutor(BattleExecutorBase):
         if ret["status"]:
             raise BattleError("活動戰鬥主函數")
 
-        decrypted_data = decrypte_battle_msg(ret["data"], ret["iv"])
-        self.update_after_battle(decrypted_data)
+        return decrypte_battle_msg(ret["data"], ret["iv"])
 
     def update_after_battle(self, data):
         super().update_after_battle(data)
@@ -630,7 +650,8 @@ class TsukiExecutor(BattleExecutorBase):
             if formation == -1
             else formation
         )
-        self.battle(best_formation)
+        ret = self.battle(best_formation)
+        self.update_after_battle(ret)
 
     def handle_resource_point(self):
         from prettytable import PrettyTable
@@ -663,6 +684,7 @@ class TsukiExecutor(BattleExecutorBase):
 
             while True:
                 if not self.team_ref.can_foward_in_battle():
+                    self.status = BattleResult.TEAM_STATUS_BAD
                     break
 
                 point_type = self.foward()
@@ -671,13 +693,16 @@ class TsukiExecutor(BattleExecutorBase):
                 else:
                     self.handle_resource_point()
 
-                if self.finished:
+                if self.finished or self.status is not BattleResult.NORMAL:
                     self.print_final_takeout()
                     break
 
+            self.team_ref.show()
             self.back_to_home()
         except BattleError as battle_err:
             print(battle_err)
+        else:
+            return self.status
 
 
 def new_event(name, api, team):
