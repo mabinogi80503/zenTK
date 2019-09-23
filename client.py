@@ -61,22 +61,6 @@ class TkrbClient(object):
         self._check_conquest(ret["party"], now_time)
         self._check_duty(ret["duty"])
 
-        # num_missions = ret.get("mission")
-        # if num_missions:
-        #     print("有 " + Fore.YELLOW + f"{num_missions}" + Fore.RESET + " 個任務尚未領取！")
-
-        # print("內番檢查中...", end="")
-        # duty = ret.get("dutty")
-        # if duty and isinstance(duty, dict):
-        #     from common import get_datime_diff_from_now
-        #     if get_datime_diff_from_now(duty.get("finished_at")).total_seconds() < 0:
-        #         if not self.api.complete_duty()["status"]:
-        #             print(Fore.YELLOW + "完成！")
-        #     else:
-        #         print(Fore.YELLOW + "仍舊努力中～")
-        # else:
-        #     print(Fore.YELLOW + "無內番！")
-
     def _check_conquest(self, data, now):
         for party in [p for p in data.values() if p["finished_at"] is not None]:
             finished_time = make_datetime(party["finished_at"])
