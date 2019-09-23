@@ -254,12 +254,20 @@ class TkrbApi(Publisher):
 
         full_url = self.server_url + url
 
-        resp = self.session.request(
-            method="POST",
-            url=full_url,
-            headers=self.headers,
-            params=self.params,
-            data=full_data,
-            allow_redirects=False,
-        )
-        return resp
+        try:
+            resp = self.session.request(
+                method="POST",
+                url=full_url,
+                headers=self.headers,
+                params=self.params,
+                data=full_data,
+                allow_redirects=False,
+            )
+        except ConnectionError:
+            print("API 斷線！")
+
+            from sys import exit
+
+            exit(1)
+        else:
+            return resp
