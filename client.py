@@ -6,6 +6,7 @@ from parsimonious.exceptions import ParseError, VisitationError
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
+import forge
 from api import APICallFailedException
 from common import make_datetime
 from database import UserLibrary
@@ -267,83 +268,6 @@ class TkrbClient(object):
     def list_equipments(self):
         pass
 
-    def _forge_room(self):
-        try:
-            ret = self.api.forge_room()
-        except APICallFailedException:
-            print(Fore.RED + "無法進入鍛刀區..." + Fore.RESET)
-            return
-        forge = ret["forge"]
-        now = ret["now"]
-
-        if forge is None or len(forge) == 0:
-            print(Fore.YELLOW + "沒有任何鍛刀作業！")
-            return
-
-        self._forge_show(forge, now)
-
-    def _forge_build(self, slot_no, steel, charcoal, coolant, files, use_assist=0):
-        try:
-            ret = self.api.forge_start(
-                slot_no, steel, charcoal, coolant, files, use_assist
-            )
-        except APICallFailedException:
-            print(Fore.RED + "鍛刀爐出了一些問題..." + Fore.RESET)
-            return
-
-        if ret["status"] != 0:
-            print(Fore.RED + "刀爐不能使用或是有東西佔位子！")
-            return
-
-        if use_assist:
-            from database import static_lib
-
-            name = static_lib.get_sword(ret["sword_id"]).name
-            print("獲得刀劍：" + Fore.YELLOW + name + Fore.RESET)
-            return
-
-        print(f"開始在第 " + Fore.YELLOW + f"{slot_no}" + Fore.RESET + " 格刀爐上凌虐刀匠！")
-
-    def _forge_complete(self, slot):
-        try:
-            ret = self.api.forge_complete(slot)
-        except APICallFailedException:
-            print(Fore.RED + "快速完成鍛刀出現了錯誤..." + Fore.RESET)
-            return
-
-        if ret["status"] != 0:
-            print(Fore.RED + "無法領取在 {slot} 鍛位之刀劍！")
-            return
-
-        from database import static_lib
-
-        name = static_lib.get_sword(ret["sword_id"]).name
-        print("獲得刀劍：" + Fore.YELLOW + name + Fore.RESET)
-
-    def _forge_show(self, forge, now):
-        from database import static_lib
-
-        now = make_datetime(now)
-
-        from prettytable import PrettyTable
-
-        table = PrettyTable()
-        table.field_names = ["鍛刀位", "名稱", "剩餘鍛造時間"]
-
-        for data in forge.values():
-            slot_no = data["slot_no"]
-            sword_name = static_lib.get_sword(data["sword_id"]).name
-            finished_time = make_datetime(data["finished_at"])
-            need_time = (
-                str(finished_time - now)
-                if now <= finished_time
-                else (Fore.YELLOW + "已完成" + Fore.RESET)
-            )
-
-            table.add_row([slot_no, sword_name, need_time])
-
-        print(table)
-
     def execute(self, command, options):
         if command is None:
             return
@@ -436,11 +360,11 @@ class TkrbClient(object):
             return
 
         if action == "ls":
-            self._forge_room()
+            forge.in_room(self.api)
             return
 
         if action == "get":
-            self._forge_complete(options.get("slot"))
+            forge.complete(self.api, options.get("slot"))
             return
 
         if action == "build":
@@ -455,7 +379,7 @@ class TkrbClient(object):
                 print("未指定鍛造需要的素材量！")
                 return
 
-            self._forge_build(slot, steel, charcoal, coolant, files, quick)
+            forge.build(self.api, slot, steel, charcoal, coolant, files, quick)
             return
 
     def handle_swap(self, options):
