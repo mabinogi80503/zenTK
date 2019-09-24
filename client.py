@@ -7,6 +7,7 @@ from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
 import forge
+import conquest
 from api import APICallFailedException
 from common import make_datetime
 from database import UserLibrary
@@ -56,15 +57,8 @@ class TkrbClient(object):
         ret = self.api.home()
 
         now_time = make_datetime(ret["now"])
-        self._check_conquest(ret["party"], now_time)
+        conquest.check_when_home(self.api, ret["party"], now_time)
         self._check_duty(ret["duty"])
-
-    def _check_conquest(self, data, now):
-        for party in [p for p in data.values() if p["finished_at"] is not None]:
-            finished_time = make_datetime(party["finished_at"])
-            if finished_time > now:
-                continue
-            self.receive_conquest_reward(party["party_no"])
 
     def _check_duty(self, data):
         if data is None or len(data) == 0:
@@ -89,67 +83,13 @@ class TkrbClient(object):
         action = options.get("action", None)
 
         if action == "ls":
-            self.show_conquest_list()
+            conquest.show(self.api)
 
         if action == "start":
-            self.start_conquest(options.get("field_id"), options.get("party"))
+            conquest.start(self.api, options.get("field_id"), options.get("party"))
 
         if action == "receive":
-            self.receive_conquest_reward(options.get("party"))
-
-    def start_conquest(self, field, party):
-        try:
-            self.api.start_conquest(field, party)
-        except APICallFailedException:
-            print(Fore.RED + f"隊伍 {party} 無法出發..." + Fore.RESET)
-
-    def receive_conquest_reward(self, party):
-        try:
-            self.api.receive_conquest_reward(party)
-        except APICallFailedException:
-            print(Fore.RED + f"無法領取隊伍 {party} 的遠征獎勵" + Fore.RESET)
-
-    def show_conquest_list(self):
-        try:
-            ret = self.api.go_conquest()
-
-            party_data = ret["party"]
-            data = ret["summary"]
-
-            if data is None or len(data) == 0:
-                print("目前無遠征唷！")
-                return
-
-            def transfer_field_2_human(field):
-                from math import ceil
-
-                print(field)
-                field = int(field)
-                episode = int(ceil(field / 4))
-                field = field - ((episode - 1) * 4)
-                return f"{episode}-{field}"
-
-            now = make_datetime(ret["now"])
-            sorted_data = sorted(data.values(), key=lambda d: d["party_no"])
-
-            from prettytable import PrettyTable
-
-            table = PrettyTable()
-            table.field_names = ["隊伍", "地圖", "剩餘時間"]
-
-            for conq in sorted_data:
-                party_no = conq["party_no"]
-                field = transfer_field_2_human(conq["field_id"])
-                finished_time = make_datetime(party_data[str(party_no)]["finished_at"])
-                need_time = (
-                    str(finished_time - now)
-                    if now <= finished_time
-                    else (Fore.YELLOW + "已完成" + Fore.RESET)
-                )
-                table.add_row([party_no, field, need_time])
-            print(table)
-        except APICallFailedException:
-            print(Fore.RED + f"無法進入遠征頁面" + Fore.RESET)
+            conquest.receive_reward(self.api, options.get("party"))
 
     # 檢查隊伍狀況，可行就回傳 team ref，否則就回傳 None
     def _check_team_status(self, team_id):
