@@ -7,6 +7,7 @@ from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
 from api import APICallFailedException
+from common import make_datetime
 from database import UserLibrary
 from datatype import Resources, SwordTeam
 from login import DMMAuthenticator
@@ -14,10 +15,6 @@ from preferences import preferences_mgr
 
 app_config = preferences_mgr.get("system")
 battle_config = preferences_mgr.get("battle")
-
-
-def make_datetime(timestr):
-    return datetime.fromtimestamp(mktime(strptime(timestr, "%Y-%m-%d %H:%M:%S")))
 
 
 class TkrbClient(object):

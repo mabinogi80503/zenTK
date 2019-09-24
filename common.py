@@ -24,6 +24,12 @@ def singleton(clz):
     return getinstance
 
 
+def make_datetime(timestr):
+    from time import mktime, strptime
+    from datetime import datetime
+    return datetime.fromtimestamp(mktime(strptime(timestr, "%Y-%m-%d %H:%M:%S")))
+
+
 def get_datime_diff_from_now(timestr):
     from time import mktime, strptime
     from datetime import timedelta, datetime
