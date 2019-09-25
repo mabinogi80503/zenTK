@@ -155,6 +155,12 @@ class TkrbApi(Publisher):
         return ret
 
     @update_token
+    def event_return(self, **kwargs):
+        url = "sally/eventreturn"
+        ret = self._request(url).json()
+        return ret
+
+    @update_token
     def event_forward(self, **kwargs):
         url = "sally/eventforward"
         data = kwargs

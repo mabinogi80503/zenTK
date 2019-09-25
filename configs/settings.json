@@ -3,5 +3,6 @@
     "battle.grind_mode": true,
     "battle.battle_interval": 60,
     "battle.bad_status_interval": 300,
-    "battle.show_team_info_on_battle": false
+    "battle.show_team_info_on_battle": false,
+    "battle.event_min_alive": 4
 }

@@ -400,6 +400,16 @@ def new_event_info(event_name, api):
     raise ValueError(f"{event_name} 錯誤！")
 
 
+def get_alive_member_count(swordref):
+    return len(
+        [
+            battleable
+            for battleable in [sword.battleable for sword in swordref if sword]
+            if battleable
+        ]
+    )
+
+
 # 秘寶之里～楽器集めの段～
 class HitakaraBattleExecutor(BattleExecutorBase):
     def __init__(self, api, team):
@@ -504,6 +514,19 @@ class HitakaraBattleExecutor(BattleExecutorBase):
         # 檢查敗北
         self.finished = gimmick["is_finish"]
 
+    def update_after_return(self, data):
+        gimmick = data["gimmick"]
+
+        if not gimmick:
+            raise BattleError("Gimmick 遺失！")
+
+        self._total_point = gimmick["settle_up"]["takeout"]["point"]
+
+        if "takeout" not in gimmick["settle_up"].keys():
+            return
+
+        self._takeout = gimmick["settle_up"]["takeout"]
+
     def print_final_takeout(self):
         if self._takeout is None:
             print(Fore.RED + "未取得任何成果！")
@@ -550,7 +573,9 @@ class HitakaraBattleExecutor(BattleExecutorBase):
             self.prepare()
 
             while True:
-                if not self.team_ref.can_foward_in_battle():
+                alive = get_alive_member_count(self.team_ref.sword_refs)
+
+                if alive < battle_config.get("event_min_alive"):
                     self.status = BattleResult.TEAM_STATUS_BAD
                     break
 
@@ -561,9 +586,13 @@ class HitakaraBattleExecutor(BattleExecutorBase):
                     self.handle_resource_point()
 
                 if self.finished or self.status is not BattleResult.NORMAL:
-                    self.print_final_takeout()
                     break
 
+            if self.status == BattleResult.TEAM_STATUS_BAD:
+                ret = self.api.event_return()
+                self.update_after_return(ret)
+
+            self.print_final_takeout()
             self.team_ref.show()
             self.back_to_home()
         except BattleError as battle_err:
