@@ -232,15 +232,14 @@ class TkrbClient(object):
         self.home()
         return status
 
-    def event_battle(self, team_id, field=1):
-        from battle import new_event
-
-        executor = new_event("tsuki")
-
+    def event_battle(self, team_id):
         team_ref = self._check_before_battle(team_id, event=True)
         if not team_ref:
-            return
+            return None
 
+        from battle import new_event
+
+        executor = new_event("tsuki", self.api, team_ref)
         executor.play()
         self.home()
 

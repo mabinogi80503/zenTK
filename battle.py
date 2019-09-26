@@ -404,7 +404,7 @@ def new_event_info(event_name, api):
 class HitakaraBattleExecutor(BattleExecutorBase):
     def __init__(self, api, team):
         super().__init__(api, team)
-        self.event_info = new_event_info("hitakara")
+        self.event_info = new_event_info("hitakara", api)
         self.event_id = self.event_info.event_id
         self.field = self.event_info.field_id
         self._next_square_id = 1
@@ -576,7 +576,7 @@ class HitakaraBattleExecutor(BattleExecutorBase):
 class TsukiExecutor(BattleExecutorBase):
     def __init__(self, api, team):
         super().__init__(api, team)
-        self.event_info = new_event_info("tsuki")
+        self.event_info = new_event_info("tsuki", api)
         self.event_id = self.event_info.event_id
         self.field = self.event_info.field_id
         self.layer_id = self.event_info.layer_id
