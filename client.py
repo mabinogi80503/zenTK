@@ -170,14 +170,14 @@ class TkrbClient(object):
         self.home()
         return status
 
-    def event_battle(self, team_id):
+    def event_battle(self, team_id, **kwargs):
         team_ref = self._check_before_battle(team_id, event=True)
         if not team_ref:
             return None
 
         from battle import new_event
 
-        executor = new_event("osakaji", self.api, team_ref)
+        executor = new_event("osakaji", self.api, team_ref, **kwargs)
         executor.play()
         self.home()
 
@@ -271,12 +271,13 @@ class TkrbClient(object):
     def handle_event(self, options):
         times = int(options["-t"])
         team_id = int(options["-p"])
+        layer = options.get("-l", None)
         interval = int(battle_config.get("battle_interval"))
 
         from time import sleep
 
         for count in range(times):
-            self.event_battle(team_id)
+            self.event_battle(team_id, layer=layer)
 
             if interval > 0.0 and count < times - 1:
                 print(f"等待 {interval} 秒...")
@@ -372,7 +373,7 @@ grammer = r"""
 
     field = _ integer "-" integer _
     value_opts = _ value_opts_name _ string _
-    value_opts_name = "-m" / "-p" / "-t"
+    value_opts_name = "-m" / "-p" / "-t" / "-l"
 
     battle_opts = field / value_opts+
 

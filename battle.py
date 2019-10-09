@@ -966,12 +966,13 @@ class OsakajiExecutor(BattleExecutorBase):
             return self.status
 
 
-def new_event(name, api, team):
+def new_event(name, api, team, **kwargs):
     if name == "hitakara":
         return HitakaraBattleExecutor(api, team)
     if name == "tsuki":
         return TsukiExecutor(api, team)
     if name == "osakaji":
-        return OsakajiExecutor(api, team)
+        layer = kwargs.get("layer", None)
+        return OsakajiExecutor(api, team, layer=layer)
 
     return None
