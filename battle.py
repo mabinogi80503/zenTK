@@ -334,7 +334,7 @@ class HitakaraEventInfo(EventInfoBase):
 
     @classmethod
     def create(cls, api):
-        data = check_and_get_sally_data()
+        data = check_and_get_sally_data(api)
         if data is None:
             return None
 
@@ -343,10 +343,17 @@ class HitakaraEventInfo(EventInfoBase):
             print("無活動！")
             return None
 
-        event_info = cls()
+        money = data.get("currency").get("money")
+        print(f"持有小判：{money}")
+
+        point = list(data.get("point").values())[0]
+        print(f"持有玉：{point}")
+
+        event_info = cls(api)
         event_info.money = data.get("currency").get("money")
         event_info.event_id = event.get("event_id")
-        event_info.field_id = list(event["field"].values())[0]["field_id"]
+        fields = list(event["field"].values())
+        event_info.field_id = fields[len(fields) - 1]["field_id"]
         event_info.rest_passcard = event.get("cost").get("rest")
         event_info.rest_passcard_max = event.get("cost").get("max")
         return event_info
@@ -412,6 +419,26 @@ def get_alive_member_count(swordref):
 
 # 秘寶之里～楽器集めの段～
 class HitakaraBattleExecutor(BattleExecutorBase):
+    instrument_name = ["笛", "箏", "三味線", "太鼓", "鈴"]
+    old_card_map = {
+        "16": "太刀",
+        "17": "槍",
+        "18": "薙刀",
+        "55": "毒矢",
+        "56": "怪火",
+        "59": "落穴",
+        "61": "炮烙玉",
+    }
+    new_card_map = {
+        "504": "太刀",
+        "505": "脇差",
+        "506": "槍",
+        "507": "薙刀",
+        "243": "毒矢",
+        "301": "怪火",
+        "203": "炮烙玉",
+    }
+
     def __init__(self, api, team):
         super().__init__(api, team)
         self.event_info = new_event_info("hitakara", api)
@@ -424,34 +451,40 @@ class HitakaraBattleExecutor(BattleExecutorBase):
         self._battle_point = 0
         self._total_point = 0
         self._takeout = None
+        self._count_fires = 0
 
     @staticmethod
     def get_instrument_name(id):
+        id = int(id)
         return (
-            ["笛", "箏", "三味線", "太鼓", "鈴"][int(id) - 25] if 25 <= int(id) <= 29 else "不明"
+            HitakaraBattleExecutor.instrument_name[id - 25] if 25 <= id <= 29 else "不明"
         )
 
     @staticmethod
-    def get_card_name(id):
+    def get_old_card_name(id):
         if int(id) == 13:
             return "BOSS"
         if 40 <= int(id) <= 52:
             return "玉"
-        else:
-            try:
-                mapping = {
-                    "16": "太刀",
-                    "17": "槍",
-                    "18": "薙刀",
-                    "55": "毒矢",
-                    "56": "怪火",
-                    "59": "落穴",
-                    "61": "炮烙玉",
-                }
-                return mapping[id]
-            except KeyError:
-                print(f"遇到奇怪的 id = {id}")
-                return "不明"
+
+        return HitakaraBattleExecutor.old_card_map[id]
+
+    @staticmethod
+    def get_new_card_name(id):
+        if int(id) == 999:
+            return "BOSS"
+        if 109 <= int(id) <= 121:
+            return "玉"
+
+        return HitakaraBattleExecutor.new_card_map[id]
+
+    @staticmethod
+    def get_card_name(id):
+        try:
+            return HitakaraBattleExecutor.get_new_card_name(id)
+        except KeyError:
+            print(f"遇到奇怪的 id = {id}")
+            return "不明"
 
     def prepare(self):
         print("準備建立「秘寶之里～楽器集めの段～」活動！")
@@ -561,12 +594,21 @@ class HitakaraBattleExecutor(BattleExecutorBase):
 
         data = self._resource_point_data
         card_id = int(data["draw"])
-        if 40 <= card_id <= 52:
-            point = card_id - 30
+
+        # if 40 <= card_id <= 52:
+        if 109 <= card_id <= 121:
+            # point = card_id - 30
+            point = card_id - 99
+
+            # 怪火倍數
+            point = point * int(pow(2, self._count_fires))
             self._total_point += point
             print(f"獲得 {point} 玉！")
         else:
-            print("遭遇到 " + self.get_card_name(card_id))
+            card_name = self.get_card_name(card_id)
+            print(f"遭遇到 {card_name}")
+            if card_name == "怪火":
+                self._count_fires += 1
 
     def play(self):
         try:
