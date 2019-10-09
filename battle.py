@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum
+from time import sleep
 
 from colorama import Fore
 
@@ -277,6 +278,8 @@ class CommonBattleExecutor(BattleExecutorBase):
                     or self.status is not BattleResult.NORMAL
                 ):
                     break
+
+                sleep(battle_config.get("battle_internal_delay"))
 
             self.team_ref.show()
             self.back_to_home()
@@ -681,6 +684,8 @@ class HitakaraBattleExecutor(BattleExecutorBase):
                 if self.finished or self.status is not BattleResult.NORMAL:
                     break
 
+                sleep(battle_config.get("battle_internal_delay"))
+
             if self.status == BattleResult.TEAM_STATUS_BAD:
                 ret = self.api.event_return()
                 self.update_after_return(ret)
@@ -819,6 +824,8 @@ class TsukiExecutor(BattleExecutorBase):
                     self.print_final_takeout()
                     break
 
+                sleep(battle_config.get("battle_internal_delay"))
+
             self.team_ref.show()
             self.back_to_home()
         except BattleError as battle_err:
@@ -953,6 +960,8 @@ class OsakajiExecutor(BattleExecutorBase):
                     or self.status is not BattleResult.NORMAL
                 ):
                     break
+
+                sleep(battle_config.get("battle_internal_delay"))
 
             if self.status == BattleResult.TEAM_STATUS_BAD:
                 ret = self.api.event_return()
