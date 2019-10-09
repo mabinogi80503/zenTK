@@ -202,6 +202,12 @@ class TkrbApi(Publisher):
         return ret
 
     @update_token
+    def event_get_party_info(self):
+        url = "party/get_sally_party_info"
+        ret = self._request(url).json()
+        return ret
+
+    @update_token
     def complete_duty(self):
         url = "duty/complete"
         ret = self._request(url).json()
