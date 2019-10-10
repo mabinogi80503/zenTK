@@ -942,6 +942,10 @@ class OsakajiExecutor(BattleExecutorBase):
             print(f"正在攻略 {self.layer_id} 樓")
 
             while True:
+                if not self.team_ref.can_foward_in_battle():
+                    self.status = BattleResult.TEAM_STATUS_BAD
+                    break
+
                 alive = get_alive_member_count(self.team_ref.sword_refs)
 
                 if alive < battle_config.get("event_min_alive"):
@@ -965,7 +969,6 @@ class OsakajiExecutor(BattleExecutorBase):
 
             if self.status == BattleResult.TEAM_STATUS_BAD:
                 ret = self.api.event_return()
-                self.update_after_return(ret)
 
             self.team_ref.show()
             self.back_to_home()
