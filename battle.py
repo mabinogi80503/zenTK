@@ -967,9 +967,6 @@ class OsakajiExecutor(BattleExecutorBase):
 
                 sleep(battle_config.get("battle_internal_delay"))
 
-            if self.status == BattleResult.TEAM_STATUS_BAD:
-                ret = self.api.event_return()
-
             self.team_ref.show()
             self.back_to_home()
         except BattleError as battle_err:
