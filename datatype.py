@@ -340,6 +340,16 @@ class SwordTeam(object):
         """
         return not (False in [sword.battleable for sword in self.sword_refs if sword])
 
+    def member_status_normal(self, index):
+        sword = self.sword_refs[index]
+
+        if sword is None:
+            return None
+
+        if 0 < index < 6 and sword is not None:
+            return sword.battleable
+        return False
+
     def set_sword(self, index, serial_id):
         if self.swords[str(index)] == serial_id:
             return
