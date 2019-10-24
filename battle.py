@@ -933,6 +933,14 @@ class OsakajiExecutor(BattleExecutorBase):
 
     def back_to_home(self):
         self.team_ref.battle_end()
+
+        if self.status is BattleResult.TEAM_STATUS_BAD:
+            print("隊伍狀況不佳")
+
+        # 隊長受重傷直接回家，不需要呼叫 event return
+        if not self.team_ref.member_status_normal(0):
+            return None
+
         self.api.event_return()
 
     def play(self):
