@@ -298,7 +298,7 @@ class SwordTeam(object):
 
     @property
     def status_text(self):
-        return ["未開放", "通常", Fore.GREEN + "遠征中" + Fore.RESET][self.status]
+        return ["未開放", "通常", Fore.GREEN + "遠征中" + Fore.RESET, "活動地圖中"][self.status]
 
     @property
     def opened(self):
