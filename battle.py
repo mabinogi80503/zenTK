@@ -337,11 +337,11 @@ class HitakaraEventInfo(EventInfoBase):
     def __init__(self, api):
         super().__init__("秘寶之里～楽器集めの段")
         self.api = api
-        self.reset_passcard = 0  # 現在持有的手形數
+        self.rest_passcard = 0  # 現在持有的手形數
         self.rest_passcard_max = 3  # 現在可用的最大手形數
 
     def check_passcard(self):
-        return self.reset_passcard != 0
+        return self.rest_passcard != 0
 
     @classmethod
     def create(cls, api):
@@ -471,6 +471,27 @@ def get_alive_member_count(swordref):
     )
 
 
+# 手形補充
+def add_passcards(api, event_id, n: int):
+    if n <= 0 or n > 3:
+        return False
+
+    ret = api.recover_event_cost(event_id, n)
+    if not ret["status"]:
+        print(f"補充手形 {n} 個！")
+        return True
+    else:
+        print("補充手形失敗！")
+        return False
+
+
+def check_passcards(info):
+    if not info:
+        raise ValueError("活動資訊不存在")
+
+    return info.check_passcard()
+
+
 # 秘寶之里～楽器集めの段～
 class HitakaraBattleExecutor(BattleExecutorBase):
     instrument_name = ["笛", "箏", "三味線", "太鼓", "鈴"]
@@ -521,6 +542,7 @@ class HitakaraBattleExecutor(BattleExecutorBase):
         if 40 <= int(id) <= 52:
             return "玉"
 
+        id = str(id)
         return HitakaraBattleExecutor.old_card_map[id]
 
     @staticmethod
@@ -530,6 +552,7 @@ class HitakaraBattleExecutor(BattleExecutorBase):
         if 109 <= int(id) <= 121:
             return "玉"
 
+        id = str(id)
         return HitakaraBattleExecutor.new_card_map[id]
 
     @staticmethod
@@ -543,11 +566,17 @@ class HitakaraBattleExecutor(BattleExecutorBase):
     def prepare(self):
         print("準備建立「秘寶之里～楽器集めの段～」活動！")
 
+        if not check_passcards(self.event_info):
+            if not add_passcards(self.api, self.event_id, self.event_info.rest_passcard_max):
+                return False
+
         ret = self.api.event_battle_start(
             self.event_id, self.team_id, self.field, sword_serial_id=0
         )
         if not ret["status"]:
+            print("使用手形 1 個")
             self.team_ref.battle_init()
+            return True
         else:
             raise BattleError("初始化活動戰鬥")
 
@@ -666,7 +695,8 @@ class HitakaraBattleExecutor(BattleExecutorBase):
 
     def play(self):
         try:
-            self.prepare()
+            if not self.prepare():
+                return None
 
             while True:
                 alive = get_alive_member_count(self.team_ref.sword_refs)

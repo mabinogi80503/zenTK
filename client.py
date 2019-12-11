@@ -105,19 +105,6 @@ class TkrbClient(object):
     def _check_before_battle(self, team_id, event=False):
         self.api.party_list()
 
-        # 若是活動，先檢查手形
-        # if event:
-        #     self.api.sally()
-        #     if not self.event_info.have_event:
-        #         return None
-
-        # if self.event_info.rest_passcard == 0:
-        #     try:
-        #         self.recover_the_passcard(self.event_info.event_id, self.event_info.rest_passcard_max)
-        #     except APICallFailedException as api_failed_error:
-        #         print(api_failed_error)
-        #         return None
-
         team_ref = self._check_team_status(team_id)
         return team_ref
 
@@ -177,16 +164,9 @@ class TkrbClient(object):
 
         from battle import new_event
 
-        executor = new_event("osakaji", self.api, team_ref, **kwargs)
+        executor = new_event("hitakara", self.api, team_ref, **kwargs)
         executor.play()
         self.home()
-
-    def recover_the_passcard(self, event_id, num):
-        ret = self.api.recover_event_cost(event_id, num)
-        if not ret["status"]:
-            print("補充手形 " + Fore.CYAN + f"{num}" + Fore.RESET + "個成功！")
-        else:
-            print(Fore.RED + "補充手形失敗！")
 
     def list_team(self, list_all=False, team_id=None):
         self.api.party_list()
