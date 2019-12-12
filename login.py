@@ -23,16 +23,16 @@ class LoginFailException(Exception):
 class DMMAuthenticator(BasicAuthenticator):
     def __init__(self, account, password):
         self.urls = {
-            "login": "https://www.dmm.com/my/-/login/",
-            "ajax": "https://www.dmm.com/my/-/login/ajax-get-token/",
-            "auth": "https://www.dmm.com/my/-/login/auth/",
+            "login": "https://accounts.dmm.com/service/login/password",
+            "get-token": "https://accounts.dmm.com/service/api/get-token",
+            "auth": "https://accounts.dmm.com/service/login/password/authenticate",
             "game": "http://pc-play.games.dmm.com/play/tohken/",
             "request": "https://osapi.dmm.com/gadgets/makeRequest",
         }
 
         self.patterns = {
-            "dmm_token": re.compile('xhr\\.setRequestHeader\\("DMM_TOKEN", "([^"]+)"'),
-            "token": re.compile('"token": "([^"]+)"'),
+            "csrf-token": re.compile(r'<meta name=\"csrf-token\" content=\"(\w+)\" />'),
+            "http-dmm-token": re.compile(r'<meta name=\"csrf-http-dmm-token\" content=\"(\w+)\" />'),
         }
 
         self.session = requests.session()
@@ -47,11 +47,6 @@ class DMMAuthenticator(BasicAuthenticator):
 
         self.dmm_id = account
         self.dmm_pwd = password
-        self.dmm_token = None
-        self.token = None
-        self.ajax_token = None
-        self.ajax_id_token = None
-        self.ajax_pwd_token = None
         self.game_version = None
 
     def __del__(self):
@@ -59,44 +54,54 @@ class DMMAuthenticator(BasicAuthenticator):
 
     def _parse_dmm_token(self):
         resp = self._request(self.urls["login"])
-        mch = self.patterns["dmm_token"].search(resp.text)
+        mch = self.patterns["csrf-token"].search(resp.text)
+
         if not mch:
-            raise LoginFailException("取得 DMM token 失敗")
+            raise LoginFailException("取得 DMM csrf-token 失敗")
 
-        self.dmm_token = mch.group(1)
-        mch = self.patterns["token"].search(resp.text)
-        if mch:
-            self.token = mch.group(1)
+        csrf_token = mch.group(1)
 
-        return self.dmm_token, self.token
+        mch = self.patterns["http-dmm-token"].search(resp.text)
 
-    def _parse_ajax_token(self):
+        if not mch:
+            raise LoginFailException("取得 DMM http token 失敗")
+
+        http_dmm_token = mch.group(1)
+
+        return csrf_token, http_dmm_token
+
+    def _parse_get_token(self, csrf_token, http_token):
         self.headers.update(
             {
-                "DMM_TOKEN": self.dmm_token,
+                "http-dmm-token": http_token,
                 "X-Requested-With": "XMLHttpRequest",
-                "Origin": "https://www.dmm.com",
+                "Origin": "https://accounts.dmm.com",
                 "Referer": self.urls["login"],
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
                 "Accept": "application/json, text/javascript, */*; q=0.01",
             }
         )
 
-        payload = {"token": self.token}
+        payload = {"token": csrf_token}
 
-        resp = self._request(self.urls["ajax"], method="POST", data=payload)
+        resp = self._request(self.urls["get-token"], method="POST", data=payload)
         if resp.status_code != requests.codes.ok:
-            raise LoginFailException("取得 ajax token 失敗！")
+            raise LoginFailException("DMM get token 失敗！")
 
         token = resp.json()
-        self.ajax_token = token["token"]
-        self.ajax_id_token = token["login_id"]
-        self.ajax_pwd_token = token["password"]
 
-        return self.ajax_token, self.ajax_id_token, self.ajax_pwd_token
+        code = token["header"]["result_code"]
+        if code != "0":
+            raise LoginFailException(f"DMM get token: {code}")
 
-    def _parse_osapi_url(self):
-        del self.headers["DMM_TOKEN"]
+        next_token = token["body"]["token"]
+        hash_id = token["body"]["login_id"]
+        hash_pwd = token["body"]["password"]
+
+        return next_token, hash_id, hash_pwd
+
+    def _parse_authenticate(self, token):
+        del self.headers["http-dmm-token"]
         del self.headers["X-Requested-With"]
 
         self.session.cookies.update(
@@ -104,11 +109,13 @@ class DMMAuthenticator(BasicAuthenticator):
         )
 
         payload = {
-            "token": self.ajax_token,
+            "token": token,
             "login_id": self.dmm_id,
             "password": self.dmm_pwd,
-            self.ajax_id_token: self.dmm_id,
-            self.ajax_pwd_token: self.dmm_pwd,
+            "idKey": self.dmm_id,
+            "pwKey": self.dmm_pwd,
+            "path": "",
+            "prompt": ""
         }
 
         self._request(self.urls["auth"], method="POST", data=payload)
@@ -212,14 +219,11 @@ class DMMAuthenticator(BasicAuthenticator):
         from colorama import Fore
 
         try:
-            self._parse_dmm_token()
-            self._parse_ajax_token()
-            self._parse_osapi_url()
+            csrf_token, http_token = self._parse_dmm_token()
+            token, id_hash, pwd_hash = self._parse_get_token(csrf_token, http_token)
+            self._parse_authenticate(token)
             self._login_game()
             print(Fore.GREEN + "成功")
-
-            # 登入結束！不再需要 proxy 了！
-            self.proxies = None
         except LoginFailException as e:
             print(Fore.RED + "失敗")
             print(e)
