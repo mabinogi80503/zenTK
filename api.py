@@ -233,6 +233,13 @@ class TkrbApi(Publisher):
         ret = self._request(url, data=data).json()
         return ret
 
+    @update_token
+    def alloutbattle(self, party):
+        url = "battle/alloutbattle"
+        data = {"party_no": party}
+        ret = self._request(url, data=data).json()
+        return ret
+
     @notify_subject("home")
     @update_token
     def home(self):

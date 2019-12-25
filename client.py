@@ -164,7 +164,7 @@ class TkrbClient(object):
 
         from battle import new_event
 
-        executor = new_event("hitakara", self.api, team_ref, **kwargs)
+        executor = new_event("consecutive-team", self.api, team_ref, **kwargs)
         executor.play()
         self.home()
 
