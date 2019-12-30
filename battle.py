@@ -1150,12 +1150,15 @@ class ConsecutiveTeamExecutor(BattleExecutorBase):
     def back_to_home(self):
         self.team_ref.battle_end()
 
-        if self.status is BattleResult.TEAM_STATUS_BAD:
-            print("隊伍狀況不佳")
-
         # 隊長受重傷直接回家，不需要呼叫 event return
         if not self.team_ref.member_status_normal(0):
+            print("隊長重傷，返回本丸！")
             return None
+
+        if self.status == BattleResult.TEAM_STATUS_BAD:
+            print("隊伍狀況不佳，返回本丸！")
+            self.api.event_return()
+            return
 
         self.api.home()
 

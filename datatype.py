@@ -346,7 +346,7 @@ class SwordTeam(object):
         if sword is None:
             return None
 
-        if 0 < index < 6 and sword is not None:
+        if 0 <= index <= 5:
             return sword.battleable
         return False
 
