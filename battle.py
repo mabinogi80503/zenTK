@@ -24,7 +24,13 @@ def decrypte_battle_msg(data, iv):
 
     d_json = json.loads(decrypted[: decrypted.rfind("}") + 1])
 
-    s = str(d_json).replace("True", "true").replace("False", "false").replace("None", "null").replace("'", "\"")
+    s = (
+        str(d_json)
+        .replace("True", "true")
+        .replace("False", "false")
+        .replace("None", "null")
+        .replace("'", '"')
+    )
     with open("decrypted_battle.json", mode="w", encoding="UTF-8") as f:
         f.write(s)
 
@@ -501,6 +507,45 @@ class ConsecutiveTeamEventInfo(EventInfoBase):
         return event_info
 
 
+class FreesearchEventInfo(EventInfoBase):
+    def __init__(self, api):
+        super().__init__("江戸城潜入調査")
+        self.api = api
+        self.rest_passcard = 0
+        self.rest_passcard_max = 3
+
+    def check_passcard(self):
+        return self.rest_passcard != 0
+
+    @classmethod
+    def create(cls, api):
+        data = check_and_get_sally_data(api)
+        if data is None:
+            return None
+
+        event = list(data.get("event").values())[0]
+        if event is None:
+            print("無活動！")
+            return None
+
+        money = data.get("currency").get("money")
+        print(f"持有小判：{money}")
+
+        # point = list(data.get("point").values())[0]
+        # print(f"持有金鑰：{point}")
+
+        event_info = cls(api)
+        event_info.money = data.get("currency").get("money")
+        event_info.event_id = event.get("event_id")
+        fields = list(event["field"].values())
+        event_info.field_id = fields[len(fields) - 1]["field_id"]
+
+        event_info.rest_passcard = event.get("cost").get("rest")
+        event_info.rest_passcard_max = event.get("cost").get("max")
+        print(f"手形剩餘：{event_info.rest_passcard}/{event_info.rest_passcard_max}")
+        return event_info
+
+
 def new_event_info(event_name, api):
     if event_name == "hitakara":
         return HitakaraEventInfo.create(api)
@@ -510,6 +555,8 @@ def new_event_info(event_name, api):
         return OsakajiEventInfo.create(api)
     elif event_name == "consecutive-team":
         return ConsecutiveTeamEventInfo.create(api)
+    elif event_name == "freesearch":
+        return FreesearchEventInfo.create(api)
 
     raise ValueError(f"{event_name} 錯誤！")
 
@@ -620,7 +667,9 @@ class HitakaraBattleExecutor(BattleExecutorBase):
         print("準備建立「秘寶之里～楽器集めの段～」活動！")
 
         if not check_passcards(self.event_info):
-            if not add_passcards(self.api, self.event_id, self.event_info.rest_passcard_max):
+            if not add_passcards(
+                self.api, self.event_id, self.event_info.rest_passcard_max
+            ):
                 return False
 
         ret = self.api.event_battle_start(
@@ -1079,7 +1128,9 @@ class ConsecutiveTeamExecutor(BattleExecutorBase):
         print(f"活動 {self.event_info.name} 準備")
 
         if not check_passcards(self.event_info):
-            if not add_passcards(self.api, self.event_id, self.event_info.rest_passcard_max):
+            if not add_passcards(
+                self.api, self.event_id, self.event_info.rest_passcard_max
+            ):
                 return False
 
         ret = self.api.event_battle_start(
@@ -1188,14 +1239,178 @@ class ConsecutiveTeamExecutor(BattleExecutorBase):
                 else:
                     break
 
-                if (
-                    self.finished
-                    or self.status is not BattleResult.NORMAL
-                ):
+                if self.finished or self.status is not BattleResult.NORMAL:
                     break
 
                 sleep(battle_config.get("battle_internal_delay"))
 
+            self.team_ref.show()
+            self.back_to_home()
+        except BattleError as battle_err:
+            print(battle_err)
+        else:
+            return self.status
+
+
+class FreesearchExecutor(BattleExecutorBase):
+    def __init__(self, api, team):
+        super().__init__(api, team)
+        self.event_info = new_event_info("freesearch", api)
+        self.event_id = self.event_info.event_id
+        self.field = self.event_info.field_id
+
+        self._enemy_formation = -1
+        self._next_candidate_points = []
+        self._fix_path = [5, 9, 13, 17, 20]
+
+        self._battle_point = 0
+        self._left_move = 6
+        self._takeout = None
+
+    def prepare(self):
+        print(f"活動 {self.event_info.name} 準備")
+
+        if not check_passcards(self.event_info):
+            if not add_passcards(
+                self.api, self.event_id, self.event_info.rest_passcard_max
+            ):
+                return False
+
+        ret = self.api.event_battle_start(self.event_id, self.team_id, self.field)
+
+        if not ret["status"]:
+            print("使用手形 1 個")
+            self.team_ref.battle_init()
+            self._next_candidate_points = ret["freesearch"]["next"] or []
+            return True
+        else:
+            raise BattleError("初始化活動戰鬥")
+
+    def foward(self):
+
+        count = len(self._next_candidate_points)
+        # direction = (
+        #     self._next_candidate_points[self._fix_path.pop(0)] if count != 0 else 0
+        # )
+
+        if count != 0:
+            direction = self._fix_path.pop(0)
+        else:
+            direction = 0
+
+        ret = self.api.event_forward(direction=direction)
+
+        if ret["status"]:
+            raise BattleError("活動前進")
+        return self.update_info_from_forward(ret)
+
+    def update_info_from_forward(self, data):
+        self._next_square_id = data["square_id"]
+        self.finished = data["is_finish"]
+        self._next_candidate_points = data["freesearch"]["next"] or []
+
+        if len(data["scout"]) != 0:
+            self._enemy_formation = data["scout"]["formation_id"]
+            return BattlePointType.BATTLE
+        else:
+            self._resource_point_data = data["freesearch"]
+            return BattlePointType.MATERIAL
+
+    def battle(self, formation):
+        ret = self.api.battle(formation)
+
+        if ret["status"]:
+            raise BattleError("活動戰鬥主函數")
+
+        return decrypte_battle_msg(ret["data"], ret["iv"])
+
+    def handle_battle_point(self, formation=-1):
+        best_formation = (
+            get_favorable_formation(self._enemy_formation)
+            if formation == -1
+            else formation
+        )
+        ret = self.battle(best_formation)
+        self.update_after_battle(ret)
+
+    def update_after_battle(self, data):
+        super().update_after_battle(data)
+
+        freesearch = data["freesearch"]
+
+        if not freesearch:
+            raise BattleError("Freesearch 遺失！")
+
+        self._check_reward(freesearch)
+
+        self.finished = freesearch["is_finish"]
+        self._next_candidate_points = data["freesearch"]["next"]
+
+    def handle_resource_point(self):
+        if len(self._resource_point_data) == 0:
+            return
+
+        self._check_reward(self._resource_point_data)
+
+    def _check_reward(self, data):
+        if data is None:
+            return None
+
+        if data.get("incident", None) is None:
+            reward = data.get("bonus", None)
+        else:
+            reward = data.get("incident", None)
+
+        if reward is not None:
+            got_points = reward.get("key_num", 0)
+            print(f"獲得金鑰： {got_points} 把")
+
+        self._left_move = data.get("movement", 0)
+        # print(f"剩餘移動： {self._left_move } 步")
+
+        if "takeout" not in data["settle_up"].keys():
+            return
+        self._takeout = data["settle_up"]["takeout"]
+
+    def print_final_takeout(self):
+        if self._takeout is None:
+            print(Fore.RED + "未取得任何成果！")
+            return
+
+        print(Fore.YELLOW + f"總共獲得金鑰: {self._takeout} 把")
+
+    def back_to_home(self):
+        self.team_ref.battle_end()
+        self.api.home()
+
+    def play(self):
+        try:
+            if not self.prepare():
+                return None
+
+            while True:
+                if not self.team_ref.can_foward_in_battle():
+                    self.status = BattleResult.TEAM_STATUS_BAD
+                    break
+
+                alive = get_alive_member_count(self.team_ref.sword_refs)
+
+                if alive < battle_config.get("event_min_alive"):
+                    self.status = BattleResult.TEAM_STATUS_BAD
+                    break
+                point_type = self.foward()
+
+                if point_type == BattlePointType.BATTLE:
+                    self.handle_battle_point()
+                else:
+                    self.handle_resource_point()
+
+                if self.finished or self.status is not BattleResult.NORMAL:
+                    break
+
+                sleep(battle_config.get("battle_internal_delay"))
+
+            self.print_final_takeout()
             self.team_ref.show()
             self.back_to_home()
         except BattleError as battle_err:
@@ -1214,5 +1429,7 @@ def new_event(name, api, team, **kwargs):
         return OsakajiExecutor(api, team, layer=layer)
     if name == "consecutive-team":
         return ConsecutiveTeamExecutor(api, team)
+    if name == "freesearch":
+        return FreesearchExecutor(api, team)
 
     return None
