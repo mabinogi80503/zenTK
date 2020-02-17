@@ -1267,6 +1267,11 @@ class FreesearchExecutor(BattleExecutorBase):
         self._left_move = 6
         self._takeout = None
 
+        from event_find_path import event_find_path
+
+        self.find_path = event_find_path()
+        self.trace = [1]
+
     def prepare(self):
         print(f"活動 {self.event_info.name} 準備")
 
@@ -1287,16 +1292,23 @@ class FreesearchExecutor(BattleExecutorBase):
             raise BattleError("初始化活動戰鬥")
 
     def foward(self):
+        from random import randint
 
         count = len(self._next_candidate_points)
-        # direction = (
-        #     self._next_candidate_points[self._fix_path.pop(0)] if count != 0 else 0
-        # )
 
-        if count != 0:
-            direction = self._fix_path.pop(0)
-        else:
-            direction = 0
+        direction = (
+            self.find_path.find_next_node(
+                self._next_square_id, self._left_move, self.trace
+            )
+            if count != 0
+            else 0
+        )
+
+        direction = (
+            self._next_candidate_points[randint(0, count - 1)]
+            if direction == -1
+            else direction
+        )
 
         ret = self.api.event_forward(direction=direction)
 
@@ -1306,6 +1318,7 @@ class FreesearchExecutor(BattleExecutorBase):
 
     def update_info_from_forward(self, data):
         self._next_square_id = data["square_id"]
+        self.trace.append(data["square_id"])
         self.finished = data["is_finish"]
         self._next_candidate_points = data["freesearch"]["next"] or []
 
