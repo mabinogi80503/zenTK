@@ -55,7 +55,7 @@ class OsakajiEventInfo(EventInfoBase):
 class OsakajiExecutor(BattleExecutorBase):
     def __init__(self, api, team, *args, **kwargs):
         super().__init__(api, team)
-        self.event_info = OsakajiEventInfo(api)
+        self.event_info = OsakajiEventInfo.create(api)
         self.event_id = self.event_info.event_id
         self.field = self.event_info.field_id
 

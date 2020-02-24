@@ -58,7 +58,7 @@ class ConsecutiveTeamEventInfo(EventInfoBase):
 class ConsecutiveTeamExecutor(BattleExecutorBase):
     def __init__(self, api, team):
         super().__init__(api, team)
-        self.event_info = ConsecutiveTeamEventInfo(api)
+        self.event_info = ConsecutiveTeamEventInfo.create(api)
         self.event_id = self.event_info.event_id
         self.field = self.event_info.field_id
         self._cur_team_id = self.team_id
