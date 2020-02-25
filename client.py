@@ -150,21 +150,21 @@ class TkrbClient(object):
         if not team_ref:
             return None
 
-        from battle import CommonBattleExecutor
+        import battle
 
-        executor = CommonBattleExecutor(self.api, team_ref, episode, field, sakura)
+        executor = battle.request("common", self.api, team_ref, episode, field, sakura)
         status = executor.play()
         self.home()
         return status
 
-    def event_battle(self, team_id, **kwargs):
+    def event_battle(self, team_id, *args, **kwargs):
         team_ref = self._check_before_battle(team_id, event=True)
         if not team_ref:
             return None
 
-        from battle import new_event
+        import battle
 
-        executor = new_event("freesearch", self.api, team_ref, **kwargs)
+        executor = battle.request("consecutive", self.api, team_ref, *args, **kwargs)
         executor.play()
         self.home()
 
@@ -226,7 +226,7 @@ class TkrbClient(object):
         team_bad_waittime = int(battle_config.get("bad_status_interval"))
 
         from time import sleep
-        from battle import BattleResult
+        from battle.base import BattleResult
 
         for count in range(times):
             status = self.battle(team_id, episode, field)
