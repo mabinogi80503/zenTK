@@ -1,4 +1,4 @@
-from . import consecutive, hitakara, normalexecutor, osakaji, tsuki
+from . import consecutive, hitakara, normalexecutor, osakaji, tsuki, freesearch
 
 executors = {
     "common": normalexecutor.CommonBattleExecutor,
@@ -6,6 +6,7 @@ executors = {
     "hitakara": hitakara.HitakaraBattleExecutor,
     "osakaji": osakaji.OsakajiExecutor,
     "tsuki": tsuki.TsukiExecutor,
+    "freesearch": freesearch.FreesearchExecutor,
 }
 
 

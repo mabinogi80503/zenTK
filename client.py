@@ -164,7 +164,7 @@ class TkrbClient(object):
 
         import battle
 
-        executor = battle.request("consecutive", self.api, team_ref, *args, **kwargs)
+        executor = battle.request("freesearch", self.api, team_ref, *args, **kwargs)
         executor.play()
         self.home()
 
