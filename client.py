@@ -6,7 +6,6 @@ from parsimonious.exceptions import ParseError, VisitationError
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
-import forge
 import conquest
 from api import APICallFailedException
 from common import make_datetime
@@ -275,33 +274,10 @@ class TkrbClient(object):
             self.team_sakura(episode, field, team_id)
 
     def handle_forge(self, options):
-        action = options.get("action", None)
+        import forge
 
-        if not action:
-            return
-
-        if action == "ls":
-            forge.in_room(self.api)
-            return
-
-        if action == "get":
-            forge.complete(self.api, options.get("slot"))
-            return
-
-        if action == "build":
-            slot = options.get("slot", 1)
-            steel = options.get("steel", None)
-            charcoal = options.get("charcoal", None)
-            coolant = options.get("coolant", None)
-            files = options.get("files", None)
-            quick = options.get("quick", 0)
-
-            if not steel or not charcoal or not coolant or not files:
-                print("未指定鍛造需要的素材量！")
-                return
-
-            forge.build(self.api, slot, steel, charcoal, coolant, files, quick)
-            return
+        subcmd = options.get("subcmd", "")
+        return forge.request(self.api, subcmd)
 
     def handle_swap(self, options):
         action = options.get("action", None)
@@ -350,6 +326,7 @@ grammer = r"""
 
     string = ~r"\w+"
     integer = ~r"\d+"
+    subcmd = ~r"[- a-zA-Z0-9]*"
 
     field = _ integer "-" integer _
     value_opts = _ value_opts_name _ string _
@@ -360,9 +337,7 @@ grammer = r"""
     battle = _ "battle" _ battle_opts+
     event = _ "event" _ value_opts+
     sakura = _ "sakura" _ battle_opts*
-    forge = _ "forge" _ forge_opts _
-    forge_opts = (_ "build" _ forge_build_opts+ _) / (_ "get" _ integer _) / (_ "ls" _)
-    forge_build_opts = (_ "-m" _ integer _ integer _ integer _ integer _) / (_ "-s" _ integer _) / (_ "-u" _)
+    forge = _ "forge" _ subcmd _
 
     swap = _ "swap" _ swap_opts+ _
     swap_opts = (_ "-p" _ swap_team_opts _) / (_ "-m" _ integer _) / (_ "-c" _ integer _)
@@ -407,6 +382,10 @@ class TkrbExecutor(NodeVisitor):
     def visit_integer(self, node, children):
         return node.text
 
+    def visit_subcmd(self, node, children):
+        self.options["subcmd"] = node.text
+        return node.text
+
     def visit_field(self, node, children):
         _, episode, _, field, _ = children
         self.options["episode"] = episode
@@ -443,41 +422,6 @@ class TkrbExecutor(NodeVisitor):
 
     def visit_forge(self, node, children):
         self.method = "forge"
-        return node
-
-    def visit_forge_opts(self, node, children):
-        children = children[0]
-        self.options["action"] = children[1].text
-
-        if self.options["action"] == "get":
-            self.options["slot"] = children[3]
-        return node
-
-    def visit_forge_build_opts(self, node, children):
-        children = children[0]
-        kind = children[1].text
-
-        if kind == "-u":
-            self.options["quick"] = 1
-            return node
-
-        slot = children[3]
-        if kind == "-s":
-            self.options["slot"] = slot
-            return node
-
-        _, steel, _, charcoal, _, coolant, _, files, *_ = children[2:]
-        if kind == "-m":
-            self.options.update(
-                {
-                    "steel": steel,
-                    "charcoal": charcoal,
-                    "coolant": coolant,
-                    "files": files,
-                }
-            )
-            return node
-
         return node
 
     def visit_swap(self, node, children):
