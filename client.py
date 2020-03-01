@@ -6,6 +6,7 @@ from parsimonious.exceptions import ParseError, VisitationError
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
+import forge
 import conquest
 from api import APICallFailedException
 from common import make_datetime
@@ -29,6 +30,7 @@ class TkrbClient(object):
             "3": SwordTeam(self.api, self.user_data, "3"),
             "4": SwordTeam(self.api, self.user_data, "4"),
         }
+        self.forgeroom = forge.ForgeRoom(api)
         self.init_first()
 
     @classmethod
@@ -274,10 +276,10 @@ class TkrbClient(object):
             self.team_sakura(episode, field, team_id)
 
     def handle_forge(self, options):
-        import forge
-
         subcmd = options.get("subcmd", "")
-        return forge.request(self.api, subcmd)
+        method, opts = forge.parse(subcmd)
+
+        return self.forgeroom.execute(method, opts)
 
     def handle_swap(self, options):
         action = options.get("action", None)

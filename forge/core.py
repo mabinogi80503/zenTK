@@ -104,8 +104,11 @@ class ForgeRoom(object):
         return self._get(slot)
 
     def execute(self, action, options):
+        if not action:
+            return False
+
         method = getattr(self, f"handle_{action}")
-        return method(options)
+        return method(options) if method else False
 
 
 grammer = r"""
@@ -174,16 +177,12 @@ class ForgeCmdVisitor(NodeVisitor):
                     "files": files,
                 }
             )
-            return node
 
         if opt == "-s":
-            print(children)
             self.options["slot"] = children[3]
-            return node
 
         if opt == "-u":
             self.options["quick"] = 1
-            return node
 
         return node
 
@@ -198,9 +197,11 @@ class ForgeCmdVisitor(NodeVisitor):
 grammer = Grammar(grammer)
 
 
-def request(api, cmd):
-    if cmd is None or cmd == "":
-        return None
+def parse(cmd):
+    method = opts = None
+
+    if cmd is None or len(cmd) == 0:
+        return method, opts
 
     try:
         root = grammer.parse(cmd)
@@ -211,7 +212,8 @@ def request(api, cmd):
         visitor = ForgeCmdVisitor()
         try:
             visitor.visit(root)
-            room = ForgeRoom(api)
-            return room.execute(visitor.method, visitor.options)
+            method, opts = visitor.method, visitor.options
         except VisitationError as err:
             print(err)
+    finally:
+        return method, opts
