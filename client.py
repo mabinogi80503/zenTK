@@ -31,6 +31,7 @@ class TkrbClient(object):
             "4": SwordTeam(self.api, self.user_data, "4"),
         }
         self.forgeroom = forge.ForgeRoom(api)
+        self.conquest = conquest.Conquest(api)
         self.init_first()
 
     @classmethod
@@ -58,7 +59,7 @@ class TkrbClient(object):
         ret = self.api.home()
 
         now_time = make_datetime(ret["now"])
-        conquest.check_when_home(self.api, ret["party"], now_time)
+        self.conquest.check_when_home(ret["party"], now_time)
         self._check_duty(ret["duty"])
 
     def _check_duty(self, data):
@@ -81,16 +82,9 @@ class TkrbClient(object):
                 return
 
     def handle_conquest(self, options):
-        action = options.get("action", None)
-
-        if action == "ls":
-            conquest.show(self.api)
-
-        if action == "start":
-            conquest.start(self.api, options.get("field_id"), options.get("party"))
-
-        if action == "receive":
-            conquest.receive_reward(self.api, options.get("party"))
+        subcmd = options.get("subcmd", "")
+        method, options = conquest.parse(subcmd)
+        return self.conquest.execute(method, options) if method else False
 
     # 檢查隊伍狀況，可行就回傳 team ref，否則就回傳 None
     def _check_team_status(self, team_id):
@@ -345,8 +339,7 @@ grammer = r"""
     swap_opts = (_ "-p" _ swap_team_opts _) / (_ "-m" _ integer _) / (_ "-c" _ integer _)
     swap_team_opts = _ integer _ (":" _ integer _)*
 
-    conquest = (_ "conquest" _ conquest_opts+ _) / (_ "conquest" _)
-    conquest_opts = (_ "-s" _ field _) / (_ "-p" _ integer _)
+    conquest = _ "conquest" _ subcmd _
 
     ls = (_ "ls" _ "-p" _ integer _) / (_ "ls" _)
     clear = _ "clear" _
@@ -467,28 +460,6 @@ class TkrbExecutor(NodeVisitor):
 
     def visit_conquest(self, node, children):
         self.method = node.expr_name
-
-        children = children[0]
-        if len(children) == 3:
-            self.options["action"] = "ls"
-            return node
-        return node
-
-    def visit_conquest_opts(self, node, children):
-        children = children[0]
-        kind = children[1].text
-
-        if kind == "-s":
-            self.options["action"] = "start"
-            a = int(self.options["episode"])
-            b = int(self.options["field"])
-            self.options["field_id"] = str((a - 1) * 4 + b)
-            return node
-
-        if kind == "-p":
-            self.options.setdefault("action", "receive")
-            self.options["party"] = children[3]
-            return node
         return node
 
     def visit_ls(self, node, children):
