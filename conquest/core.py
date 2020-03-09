@@ -2,8 +2,8 @@ from parsimonious.exceptions import ParseError, VisitationError
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
-from api import APICallFailedException
-from common import make_datetime
+from core.exceptions import APICallFailedException
+from core.utils import make_datetime
 
 
 class Conquest(object):

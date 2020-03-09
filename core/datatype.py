@@ -4,9 +4,9 @@ from functools import wraps
 import attr
 from colorama import Back, Fore
 from prettytable import PrettyTable
-from notification import Subscriber
 
-from preferences import preferences_mgr
+from .notification import Subscriber
+from .preferences import preferences_mgr
 
 battle_cfg = preferences_mgr.get("battle")
 
@@ -179,7 +179,7 @@ class Sword(object):
         if now_fatigue < Sword.FatigueStatus.NORMAL:
             if self.recover_time:
                 from datetime import timedelta
-                from common import get_datime_diff_from_now
+                from .utils import get_datime_diff_from_now
 
                 # 三分鐘恢復一次，計算次數
                 diff = (int)(

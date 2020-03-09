@@ -2,8 +2,8 @@ from parsimonious.exceptions import ParseError, VisitationError
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
-from api import APICallFailedException
-from common import make_datetime
+from core.exceptions import APICallFailedException
+from core.utils import make_datetime
 
 
 class ForgeRoom(object):
@@ -20,7 +20,7 @@ class ForgeRoom(object):
         return ret["forge"], ret["now"]
 
     def _ls(self, forgelist, now):
-        from database import static_lib
+        from core.database import static_lib
 
         now = make_datetime(now)
 
@@ -60,7 +60,7 @@ class ForgeRoom(object):
             return False
 
         if use_assist:
-            from database import static_lib
+            from core.database import static_lib
 
             name = static_lib.get_sword(ret["sword_id"]).name
             print(f"獲得刀劍：{name}")
@@ -93,7 +93,7 @@ class ForgeRoom(object):
             print(f"無法領取在 {slot} 鍛位之刀劍！")
             return False
 
-        from database import static_lib
+        from core.database import static_lib
 
         name = static_lib.get_sword(ret["sword_id"]).name
         print(f"獲得刀劍：{name}")

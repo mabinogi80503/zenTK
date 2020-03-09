@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 
 from colorama import Fore
 
-from preferences import preferences_mgr
+from core.preferences import preferences_mgr
 
 from .base import (
     BattleError,
