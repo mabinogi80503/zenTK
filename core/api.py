@@ -2,7 +2,8 @@ from functools import wraps
 
 import requests
 
-from notification import Publisher
+from .exceptions import APICallFailedException
+from .notification import Publisher
 
 
 def update_token(func):
@@ -29,15 +30,6 @@ def notify_subject(name):
         return wrapper
 
     return outside
-
-
-class APICallFailedException(Exception):
-    def __init__(self, msg):
-        super().__init__(self)
-        self.msg = msg
-
-    def __str__(self):
-        return f"API 呼叫者 {self.msg} 失敗"
 
 
 class TkrbApi(Publisher):

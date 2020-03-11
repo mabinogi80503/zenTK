@@ -1,6 +1,6 @@
 from time import sleep
 
-from preferences import preferences_mgr
+from core.preferences import preferences_mgr
 
 from .base import (BattleError, BattleExecutorBase, BattlePointType,
                    BattleResult, EventInfoBase)

@@ -1,9 +1,12 @@
 import click
+from colorama import init
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 
 from __init__ import __version__
-from client import TkrbClient, execute
+from core.client import TkrbClient, execute
+
+init(autoreset=True)
 
 
 class TkrbCLI(object):

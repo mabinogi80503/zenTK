@@ -1,6 +1,6 @@
 from time import sleep
 
-from preferences import preferences_mgr
+from core.preferences import preferences_mgr
 
 from .base import (BattleError, BattleExecutorBase, BattlePointType,
                    BattleResult)
@@ -78,7 +78,7 @@ class CommonBattleExecutor(BattleExecutorBase):
         if not battle_config.get("grind_mode", False):
             return
 
-        from database import static_lib
+        from core.database import static_lib
 
         points = static_lib.get_mapid_before_boss(self.episode, self.field)
         if points:

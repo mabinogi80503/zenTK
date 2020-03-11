@@ -1,23 +1,10 @@
 import re
 import urllib
-from abc import ABCMeta, abstractmethod
 
 import requests
 
-
-class BasicAuthenticator(object, metaclass=ABCMeta):
-    @abstractmethod
-    def login(self):
-        raise NotImplementedError()
-
-
-class LoginFailException(Exception):
-    def __init__(self, reason):
-        super().__init__(self)
-        self.reason = reason
-
-    def __str__(self):
-        return self.reason
+from .base import BasicAuthenticator
+from .exceptions import LoginFailException
 
 
 class DMMAuthenticator(BasicAuthenticator):
@@ -31,8 +18,10 @@ class DMMAuthenticator(BasicAuthenticator):
         }
 
         self.patterns = {
-            "csrf-token": re.compile(r'<meta name=\"csrf-token\" content=\"(\w+)\" />'),
-            "http-dmm-token": re.compile(r'<meta name=\"csrf-http-dmm-token\" content=\"(\w+)\" />'),
+            "csrf-token": re.compile(r"<meta name=\"csrf-token\" content=\"(\w+)\" />"),
+            "http-dmm-token": re.compile(
+                r"<meta name=\"csrf-http-dmm-token\" content=\"(\w+)\" />"
+            ),
         }
 
         self.session = requests.session()
@@ -115,7 +104,7 @@ class DMMAuthenticator(BasicAuthenticator):
             "idKey": self.dmm_id,
             "pwKey": self.dmm_pwd,
             "path": "",
-            "prompt": ""
+            "prompt": "",
         }
 
         self._request(self.urls["auth"], method="POST", data=payload)
@@ -229,7 +218,7 @@ class DMMAuthenticator(BasicAuthenticator):
             print(e)
             return None
         else:
-            from api import TkrbApi
+            from .api import TkrbApi
 
             return TkrbApi(
                 url=self.server_url,

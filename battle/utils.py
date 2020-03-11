@@ -83,7 +83,7 @@ def check_new_sword(data):
     if not get_sword_id:
         return
 
-    from database import static_lib
+    from core.database import static_lib
 
     sword_data = static_lib.get_sword(get_sword_id)
     if sword_data:
@@ -123,7 +123,7 @@ def check_passcards(info):
 
 
 def check_and_get_sally_data(api):
-    from api import APICallFailedException
+    from core.exceptions import APICallFailedException
 
     try:
         data = api.sally()

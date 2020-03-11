@@ -3,7 +3,7 @@ from enum import Enum
 
 from colorama import Fore
 
-from preferences import preferences_mgr
+from core.preferences import preferences_mgr
 
 from .utils import check_new_sword
 

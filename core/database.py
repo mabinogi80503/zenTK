@@ -4,9 +4,8 @@ import attr
 
 from colorama import Fore
 
-from common import singleton
-from datatype import Sword, Equipment
-from notification import Subscriber
+from .datatype import Sword, Equipment
+from .notification import Subscriber
 
 
 @attr.s
@@ -64,7 +63,6 @@ class GuardPoints(object):
         return self.points
 
 
-@singleton
 class TkrbStaticLibrary(object):
     def __init__(self):
         self.sword_map = DataMap.from_json("swords.json", SwordData)
