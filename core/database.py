@@ -4,8 +4,8 @@ import attr
 
 from colorama import Fore
 
-from common import singleton
-from datatype import Sword, Equipment
+from .datatype import Sword, Equipment
+from .notification import Subscriber
 
 
 @attr.s
@@ -29,6 +29,7 @@ class SwordData(object):
     """
     表示刀男固定的資訊
     """
+
     name = attr.ib()
 
     @classmethod
@@ -41,6 +42,7 @@ class EquipmentData(object):
     """
     表示刀裝固定的資訊
     """
+
     name = attr.ib()
     soilder = attr.ib(converter=int)
 
@@ -61,7 +63,6 @@ class GuardPoints(object):
         return self.points
 
 
-@singleton
 class TkrbStaticLibrary(object):
     def __init__(self):
         self.sword_map = DataMap.from_json("swords.json", SwordData)
@@ -86,8 +87,9 @@ class UserLibrary(object):
         # Serial ID 映射到對應的實體
         self.sword_map = {}
         self.equipment_map = {}
-
-        self.api.subscribe("party_list", self.update_from_party_list)
+        self.api.registe(
+            "party_list", Subscriber("UserLibrary", self.update_from_party_list)
+        )
 
     def get_sword(self, id):
         return self.sword_map.get(id)
