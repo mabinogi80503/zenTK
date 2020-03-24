@@ -1,0 +1,22 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+flake8 = "*"
+black = "==19.10b0"
+
+[packages]
+attrs = "==19.3.0"
+click = "==7.1.1"
+colorama = "==0.4.3"
+parsimonious = "==0.8.1"
+prompt-toolkit = "==3.0.4"
+prompt-toolkit-dob = "==2.0.9"
+pycryptodome = "==3.9.7"
+requests = "==2.23.0"
+prettytable = "*"
+
+[requires]
+python_version = "3.6"
