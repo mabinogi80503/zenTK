@@ -1,13 +1,52 @@
 from time import sleep
 
+import attr
+
 from core.preferences import preferences_mgr
 
-from .base import (BattleError, BattleExecutorBase, BattlePointType,
-                   BattleResult)
-from .utils import (decrypte_battle_msg, get_favorable_formation,
-                    get_resource_id_name)
+from .base import BattleError, BattleExecutorBase, BattlePointType, BattleResult
+from .utils import decrypte_battle_msg, get_favorable_formation, get_resource_id_name
 
 battle_config = preferences_mgr.get("battle")
+
+
+@attr.s
+class GuardPoints(object):
+    name = attr.ib(converter=str)
+    points = attr.ib()
+
+    @classmethod
+    def from_json(cls, data):
+        return cls(data["name"], data["points"])
+
+    def get_points(self):
+        return self.points
+
+
+class GuardPointsDatabase(object):
+    def __init__(self):
+        self._data = {}
+
+    def add(self, item):
+        self._data[item.name] = item
+
+    def get(self, episode, field):
+        map_id = f"{episode}-{field}"
+        return self._data.get(map_id, None)
+
+    @classmethod
+    def from_json(cls):
+        import json
+
+        instance = cls()
+
+        with open("guard_map.json", encoding="utf-8") as f:
+            for item in json.load(f):
+                instance.add(GuardPoints.from_json(item))
+        return instance
+
+
+guard_points = GuardPointsDatabase.from_json()
 
 
 class CommonBattleExecutor(BattleExecutorBase):
@@ -78,9 +117,7 @@ class CommonBattleExecutor(BattleExecutorBase):
         if not battle_config.get("grind_mode", False):
             return
 
-        from core.database import static_lib
-
-        points = static_lib.get_mapid_before_boss(self.episode, self.field)
+        points = guard_points.get(self.episode, self.field)
         if points:
             if self._square_id in points.get_points():
                 self.finished = True
