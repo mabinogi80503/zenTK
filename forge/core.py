@@ -20,7 +20,7 @@ class ForgeRoom(object):
         return ret["forge"], ret["now"]
 
     def _ls(self, forgelist, now):
-        from core.database import static_lib
+        from core.database import sword_data
 
         now = make_datetime(now)
 
@@ -31,7 +31,7 @@ class ForgeRoom(object):
 
         for data in forgelist.values():
             slot_no = data["slot_no"]
-            sword_name = static_lib.get_sword(data["sword_id"]).name
+            sword_name = sword_data.get(data["sword_id"]).name
             finished_time = make_datetime(data["finished_at"])
             need_time = str(finished_time - now) if now <= finished_time else ("已完成")
 
@@ -60,9 +60,9 @@ class ForgeRoom(object):
             return False
 
         if use_assist:
-            from core.database import static_lib
+            from core.database import sword_data
 
-            name = static_lib.get_sword(ret["sword_id"]).name
+            name = sword_data.get(ret["sword_id"]).name
             print(f"獲得刀劍：{name}")
         else:
             print(f"開始在第 {slot_no} 格刀爐上凌虐刀匠！")
@@ -93,9 +93,9 @@ class ForgeRoom(object):
             print(f"無法領取在 {slot} 鍛位之刀劍！")
             return False
 
-        from core.database import static_lib
+        from core.database import sword_data
 
-        name = static_lib.get_sword(ret["sword_id"]).name
+        name = sword_data.get(ret["sword_id"]).name
         print(f"獲得刀劍：{name}")
         return True
 

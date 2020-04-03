@@ -1,83 +1,89 @@
-import json
+import sqlite3
 
 import attr
-
 from colorama import Fore
 
-from .datatype import Sword, Equipment
+from .datatype import Equipment, Sword
 from .notification import Subscriber
 
-
-@attr.s
-class DataMap(object):
-    dictionary = attr.ib(factory=dict)
-
-    @classmethod
-    def from_json(cls, path, datatype):
-        dictionary = {}
-        with open(path, encoding="utf-8") as f:
-            for key, data in json.load(f).items():
-                dictionary[key] = datatype.from_json(data)
-        return cls(dictionary)
-
-    def get(self, id):
-        return self.dictionary.get(id)
+DATA_SOURCE_FILENAME = "data.sqlite3"
 
 
 @attr.s
 class SwordData(object):
-    """
-    表示刀男固定的資訊
-    """
+    serial = attr.ib(converter=str, default="不明")
+    name = attr.ib(converter=str, default="不明")
+    type = attr.ib(converter=str, default="不明")
+    rare = attr.ib(converter=bool, default=False)
 
-    name = attr.ib()
+    @classmethod
+    def unknown(cls):
+        return cls()
 
     @classmethod
     def from_json(cls, data):
-        return cls(data["name"])
+        return cls(data["id"], data["name"], data["type"], data["isRare"])
+
+    @classmethod
+    def from_raw(cls, data):
+        return cls(data[0], data[1], data[2], data[3])
+
+
+class SwordDatabase(object):
+    def __init__(self, database=None):
+        self.db = database
+
+    def get(self, key):
+        command = "SELECT * FROM swords WHERE id=?"
+
+        cursor = self.db.cursor()
+        data = cursor.execute(command, (key,)).fetchone()
+        return SwordData.from_raw(data) if data else SwordData.unknown()
+
+    @classmethod
+    def build(cls, file_name):
+        db = sqlite3.connect(f"file:{file_name}?mode=ro", uri=True)
+        return cls(db)
 
 
 @attr.s
 class EquipmentData(object):
-    """
-    表示刀裝固定的資訊
-    """
+    serial = attr.ib(converter=str, default="不明")
+    name = attr.ib(converter=str, default="不明")
+    soilder = attr.ib(converter=int, default=0)
 
-    name = attr.ib()
-    soilder = attr.ib(converter=int)
+    @classmethod
+    def unknown(cls):
+        return cls()
 
     @classmethod
     def from_json(cls, data):
-        return cls(data["name"], data["soilder"])
-
-
-@attr.s
-class GuardPoints(object):
-    points = attr.ib()
+        return cls(data["id"], data["name"], data["soilder"])
 
     @classmethod
-    def from_json(cls, data):
-        return cls(data)
-
-    def get_points(self):
-        return self.points
+    def from_raw(cls, data):
+        return cls(data[0], data[1], data[2])
 
 
-class TkrbStaticLibrary(object):
-    def __init__(self):
-        self.sword_map = DataMap.from_json("swords.json", SwordData)
-        self.equipment_map = DataMap.from_json("equipments.json", EquipmentData)
-        self.guard_points = DataMap.from_json("guard_map.json", GuardPoints)
+class EquipmentDatabase(object):
+    def __init__(self, database=None):
+        self.db = database
 
-    def get_sword(self, id):
-        return self.sword_map.get(id)
+    def get(self, key):
+        command = "SELECT * FROM equipments WHERE id=?"
 
-    def get_equipment(self, id):
-        return self.equipment_map.get(id)
+        cursor = self.db.cursor()
+        data = cursor.execute(command, (key,)).fetchone()
+        return EquipmentData.from_raw(data) if data else EquipmentData.unknown()
 
-    def get_mapid_before_boss(self, episode, field):
-        map_id = f"{episode}-{field}"
-        return self.guard_points.get(map_id)
+    @classmethod
+    def build(cls, file_name):
+        db = sqlite3.connect(f"file:{file_name}?mode=ro", uri=True)
+        return cls(db)
+
+
+sword_data = SwordDatabase.build(DATA_SOURCE_FILENAME)
+equipment_data = EquipmentDatabase.build(DATA_SOURCE_FILENAME)
 
 
 class UserLibrary(object):
@@ -103,7 +109,7 @@ class UserLibrary(object):
             if ref:
                 tgt_list[serial] = tgt_type.from_old_one(ref, inner_data)
             else:
-                tgt_list[serial] = tgt_type.from_json(static_lib, inner_data)
+                tgt_list[serial] = tgt_type.from_json(inner_data)
 
     def update_sword(self, serial, new):
         if serial in self.sword_map.keys() and new is None:
@@ -124,12 +130,12 @@ class UserLibrary(object):
     def update_swords(self, data):
         self.sword_map.clear()
         for serial, innerdata in data.items():
-            self.sword_map[serial] = Sword.from_json(static_lib, innerdata)
+            self.sword_map[serial] = Sword.from_json(innerdata)
 
     def update_equipments(self, data):
         self.equipment_map.clear()
         for serial, innerdata in data.items():
-            self.equipment_map[serial] = Equipment.from_json(static_lib, innerdata)
+            self.equipment_map[serial] = Equipment.from_json(innerdata)
 
     def update_from_party_list(self, data):
         sword_data = data.get("sword")
@@ -143,6 +149,3 @@ class UserLibrary(object):
             self.update_equipments(equipment_data)
         else:
             print(Fore.RED + "無法取得 equip 資料！")
-
-
-static_lib = TkrbStaticLibrary()

@@ -8,6 +8,7 @@ from prettytable import PrettyTable
 from .notification import Subscriber
 from .preferences import preferences_mgr
 
+
 battle_cfg = preferences_mgr.get("battle")
 
 
@@ -100,9 +101,10 @@ class Sword(object):
         SAKURA = 100
 
     @classmethod
-    def from_json(cls, static_lib, data):
+    def from_json(cls, data):
+        from .database import sword_data
         sword_id = data.get("sword_id")
-        sword_data = static_lib.get_sword(sword_id)
+        sword_data = sword_data.get(sword_id)
         if not sword_data:
             print(f"建構錯誤：不存在的刀劍 ID: {sword_id}")
 
@@ -542,10 +544,11 @@ class Equipment(object):
             self.is_destroyed = True
 
     @classmethod
-    def from_json(cls, static_lib, data):
+    def from_json(cls, data):
+        from .database import equipment_data
         equip_id = data.get("equip_id")
         try:
-            name = static_lib.get_equipment(equip_id).name
+            name = equipment_data.get(equip_id).name
         except AttributeError:
             print(Fore.RED + f"新道具？ ID: {equip_id}，請聯絡管理者！")
             from sys import exit

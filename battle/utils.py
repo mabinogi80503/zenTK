@@ -83,11 +83,11 @@ def check_new_sword(data):
     if not get_sword_id:
         return
 
-    from core.database import static_lib
+    from core.database import sword_data
 
-    sword_data = static_lib.get_sword(get_sword_id)
+    sword_data = sword_data.get(get_sword_id)
     if sword_data:
-        print("獲得新刀劍：" + Fore.YELLOW + f"{static_lib.get_sword(get_sword_id).name}")
+        print("獲得新刀劍：" + Fore.YELLOW + f"{sword_data.get(get_sword_id).name}")
     else:
         print("獲得一把沒有在資料庫內的刀！請聯絡專案作者更新資料庫！")
 
