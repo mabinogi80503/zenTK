@@ -32,7 +32,7 @@ class BattleError(Exception):
 
 
 class BattleExecutorBase(object, metaclass=ABCMeta):
-    def __init__(self, api, team):
+    def __init__(self, api, team, *args, **kwargs):
         self.api = api
         self.team_ref = team
         self.team_id = team.id

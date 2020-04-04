@@ -50,7 +50,7 @@ class TsukiEventInfo(EventInfoBase):
 
 
 class TsukiExecutor(BattleExecutorBase):
-    def __init__(self, api, team):
+    def __init__(self, api, team, *args, **kwargs):
         super().__init__(api, team)
         self.event_info = TsukiEventInfo.create(api)
         self.event_id = self.event_info.event_id

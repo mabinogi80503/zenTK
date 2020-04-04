@@ -92,7 +92,7 @@ class FreesearchEventInfo(EventInfoBase):
 
 class FreesearchExecutor(BattleExecutorBase):
     def __init__(self, api, team, *args, **kwargs):
-        super().__init__(api, team)
+        super().__init__(api, team, *args, **kwargs)
         self.event_info = FreesearchEventInfo.create(api)
         self.event_id = self.event_info.event_id
         self.field = self.event_info.field_id

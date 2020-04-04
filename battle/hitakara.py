@@ -71,8 +71,8 @@ class HitakaraBattleExecutor(BattleExecutorBase):
         "203": "炮烙玉",
     }
 
-    def __init__(self, api, team):
-        super().__init__(api, team)
+    def __init__(self, api, team, *args, **kwargs):
+        super().__init__(api, team, *args, **kwargs)
         self.event_info = HitakaraEventInfo.create(api)
         self.event_id = self.event_info.event_id
         self.field = self.event_info.field_id

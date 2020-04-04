@@ -12,7 +12,7 @@ battle_config = preferences_mgr.get("battle")
 
 class CommonBattleExecutor(BattleExecutorBase):
     def __init__(self, api, team, episode_id, field_id, sakura=False, *args, **kwargs):
-        super().__init__(api, team)
+        super().__init__(api, team, *args, **kwargs)
         self.episode = int(episode_id)
         self.field = int(field_id)
         self.sakura = sakura
