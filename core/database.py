@@ -21,10 +21,6 @@ class SwordData(object):
         return cls()
 
     @classmethod
-    def from_json(cls, data):
-        return cls(data["id"], data["name"], data["type"], data["isRare"])
-
-    @classmethod
     def from_raw(cls, data):
         return cls(data[0], data[1], data[2], data[3])
 
@@ -55,10 +51,6 @@ class EquipmentData(object):
     @classmethod
     def unknown(cls):
         return cls()
-
-    @classmethod
-    def from_json(cls, data):
-        return cls(data["id"], data["name"], data["soilder"])
 
     @classmethod
     def from_raw(cls, data):
