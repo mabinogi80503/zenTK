@@ -104,14 +104,12 @@ class Sword(object):
     def from_json(cls, data):
         from .database import sword_data
         sword_id = data.get("sword_id")
-        sword_data = sword_data.get(sword_id)
-        if not sword_data:
-            print(f"建構錯誤：不存在的刀劍 ID: {sword_id}")
+        sword_info = sword_data.get(sword_id)
 
         return cls(
             data.get("serial_id"),
             data.get("sword_id"),
-            sword_data.name,
+            sword_info.name,
             data.get("symbol"),
             data.get("level"),
             data.get("protect"),
@@ -405,8 +403,8 @@ class SwordTeam(object):
             return
 
         self.name = data.get("party_name")
-        for index, sword_data in data.get("slot").items():
-            self.swords[index] = sword_data.get("serial_id")
+        for index, s_data in data.get("slot").items():
+            self.swords[index] = s_data.get("serial_id")
         self.status = int(data.get("status"))
 
     def battle_init(self):
@@ -421,8 +419,8 @@ class SwordTeam(object):
 
     def update_from_set_sword(self, data):
         data = data.get(self.id)
-        for index, sword_data in data.get("slot").items():
-            self.update(index, sword_data.get("serial_id"))
+        for index, s_data in data.get("slot").items():
+            self.update(index, s_data.get("serial_id"))
 
     def handle_remove_sword(self, data):
         self.swords.clear()
@@ -432,9 +430,9 @@ class SwordTeam(object):
         if not team_data or len(team_data) == 0:
             return
 
-        for index, sword_data in team_data["slot"].items():
-            if sword_data:
-                self.swords[index] = sword_data.get("serial_id")
+        for index, s_data in team_data["slot"].items():
+            if s_data:
+                self.swords[index] = s_data.get("serial_id")
             else:
                 self.swords[index] = None
 
@@ -447,9 +445,9 @@ class SwordTeam(object):
         if not team_data or len(team_data) == 0:
             return
 
-        for index, sword_data in team_data["slot"].items():
-            if sword_data:
-                self.swords[index] = sword_data.get("serial_id")
+        for index, s_data in team_data["slot"].items():
+            if s_data:
+                self.swords[index] = s_data.get("serial_id")
             else:
                 self.swords[index] = None
 

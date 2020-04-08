@@ -85,11 +85,13 @@ def check_new_sword(data):
 
     from core.database import sword_data
 
-    sword_data = sword_data.get(get_sword_id)
-    if sword_data:
-        print("獲得新刀劍：" + Fore.YELLOW + f"{sword_data.get(get_sword_id).name}")
-    else:
-        print("獲得一把沒有在資料庫內的刀！請聯絡專案作者更新資料庫！")
+    sword_info = sword_data.get(get_sword_id)
+
+    if sword_info.is_unknown:
+        print(f"獲得一把沒有在資料庫內的刀(ID={get_sword_id})！請聯絡專案作者更新資料庫！")
+        return None
+
+    print("獲得新刀劍：" + Fore.YELLOW + f"{sword_info.name}")
 
 
 def get_alive_member_count(swordref):

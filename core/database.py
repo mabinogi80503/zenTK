@@ -16,6 +16,10 @@ class SwordData(object):
     type = attr.ib(converter=str, default="不明")
     rare = attr.ib(converter=bool, default=False)
 
+    @property
+    def is_unknown(self):
+        return self.serial == "不明"
+
     @classmethod
     def unknown(cls):
         return cls()
@@ -47,6 +51,10 @@ class EquipmentData(object):
     serial = attr.ib(converter=str, default="不明")
     name = attr.ib(converter=str, default="不明")
     soilder = attr.ib(converter=int, default=0)
+
+    @property
+    def is_unknown(self):
+        return self.serial == "不明"
 
     @classmethod
     def unknown(cls):
@@ -130,14 +138,8 @@ class UserLibrary(object):
             self.equipment_map[serial] = Equipment.from_json(innerdata)
 
     def update_from_party_list(self, data):
-        sword_data = data.get("sword")
-        if sword_data:
-            self.update_swords(sword_data)
-        else:
-            print(Fore.RED + "無法取得 sword 資料！")
+        sword_info = data.get("sword")
+        self.update_swords(sword_info)
 
         equipment_data = data.get("equip")
-        if equipment_data:
-            self.update_equipments(equipment_data)
-        else:
-            print(Fore.RED + "無法取得 equip 資料！")
+        self.update_equipments(equipment_data)
