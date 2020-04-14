@@ -304,6 +304,13 @@ class SwordTeam(object):
     def opened(self):
         return self.status != 0
 
+    def get(self, pos):
+        serial = self.swords.get(pos, -1)
+        if serial == -1:
+            return None
+
+        return self.user_data.get_sword(serial)
+
     def available(self):
         if self.status != 1:
             print("指定的隊伍正在遠征中！")
