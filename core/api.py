@@ -133,12 +133,16 @@ class TkrbApi(Publisher):
         url = "sally/eventsally"
 
         data = {
-            "item_id": item_id,
             "event_id": event_id,
             "party_no": party,
             "event_field_id": field,
-            "event_layer_id": event_layer_id,
         }
+
+        if item_id != 0:
+            data["item_id"] = item_id
+
+        if event_layer_id != 0:
+            data["event_layer_id"] = event_layer_id
 
         if kwargs:
             data = {**data, **kwargs}
