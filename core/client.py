@@ -159,7 +159,7 @@ class TkrbClient(object):
 
         import battle
 
-        executor = battle.request("freesearch", self.api, team_ref, *args, **kwargs)
+        executor = battle.request("armament", self.api, team_ref, *args, **kwargs)
         executor.play()
         self.home()
 
