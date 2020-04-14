@@ -75,25 +75,26 @@ class RepairRoom(object):
         return True
 
     def handle_get(self, options):
-        slot = options.get("slot", 1)
+        slot = options.get("slot", -1)
+        if slot == -1:
+            print("參數錯誤")
+            return False
         return self.get(slot)
 
     def get(self, slot):
-        # TODO: Need to check API
-        # try:
-        #     ret = self._api.forge_complete(slot)
-        # except APICallFailedException:
-        #     print("快速完成鍛刀出現了錯誤...")
-        #     return False
+        try:
+            ret = self._api.repair_complete(slot)
+        except APICallFailedException:
+            print(f"完成手入 {slot} 出現了錯誤...")
+            return False
 
-        # if ret["status"] != 0:
-        #     print(f"無法領取在 {slot} 鍛位之刀劍！")
-        #     return False
+        if ret["status"] != 0:
+            print(f"無法完成 {slot} 位之手入！")
+            return False
 
-        # from core.database import sword_data
+        for slot in ret.values():
+            print(f"手入位置 {slot} 已收回！")
 
-        # name = sword_data.get(ret["sword_id"]).name
-        # print(f"獲得刀劍：{name}")
         return True
 
     def execute(self, action, options):

@@ -263,6 +263,15 @@ class TkrbApi(Publisher):
         ret = self._request(url, data=data).json()
         return ret
 
+    @update_token
+    def repair_complete(self, slot):
+        url = "repair/complete"
+        data = {
+            "slot_no": slot,
+        }
+        ret = self._request(url, data=data).json()
+        return ret
+
     def update_payload(self, cookie=None, token=None, **kwargs):
         if cookie is not None:
             self.payload.update({"sword": cookie})
