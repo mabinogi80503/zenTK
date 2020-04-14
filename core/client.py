@@ -7,6 +7,7 @@ from parsimonious.nodes import NodeVisitor
 
 import conquest
 import forge
+import repairroom
 
 from .api import APICallFailedException
 from .database import UserLibrary
@@ -32,6 +33,7 @@ class TkrbClient(object):
         }
         self.forgeroom = forge.ForgeRoom(api)
         self.conquest = conquest.Conquest(api)
+        self.repair_room = repairroom.RepairRoom(self, api)
         self.init_first()
 
     @classmethod
@@ -275,6 +277,11 @@ class TkrbClient(object):
 
         return self.forgeroom.execute(method, opts)
 
+    def handle_repair(self, options):
+        subcmd = options.get("subcmd", "")
+        method, opts = repairroom.parse(subcmd)
+        return self.repair_room.execute(method, opts)
+
     def handle_swap(self, options):
         action = options.get("action", None)
 
@@ -318,7 +325,7 @@ grammer = r"""
     command = mutable / immutable
 
     immutable = exit / clear / ls / sleep / _
-    mutable = battle / event / sakura / forge / swap / conquest / play
+    mutable = battle / event / sakura / forge / swap / conquest / play / repair
 
     string = ~r"\w+"
     integer = ~r"\d+"
@@ -334,6 +341,7 @@ grammer = r"""
     event = _ "event" _ value_opts+
     sakura = _ "sakura" _ battle_opts*
     forge = _ "forge" _ subcmd _
+    repair = _ "repair" _ subcmd _
 
     swap = _ "swap" _ swap_opts+ _
     swap_opts = (_ "-p" _ swap_team_opts _) / (_ "-m" _ integer _) / (_ "-c" _ integer _)
@@ -460,6 +468,10 @@ class TkrbExecutor(NodeVisitor):
 
     def visit_conquest(self, node, children):
         self.method = node.expr_name
+        return node
+
+    def visit_repair(self, node, children):
+        self.method = "repair"
         return node
 
     def visit_ls(self, node, children):

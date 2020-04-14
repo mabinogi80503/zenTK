@@ -246,6 +246,23 @@ class TkrbApi(Publisher):
         ret = self._request(url).json()
         return ret
 
+    @update_token
+    def repair_room(self):
+        url = "repair"
+        ret = self._request(url).json()
+        return ret
+
+    @update_token
+    def repair_start(self, serial, slot, use_assist=0):
+        url = "repair/repair"
+        data = {
+            "serial_id": serial,
+            "slot_no": slot,
+            "use_assist": use_assist,
+        }
+        ret = self._request(url, data=data).json()
+        return ret
+
     def update_payload(self, cookie=None, token=None, **kwargs):
         if cookie is not None:
             self.payload.update({"sword": cookie})
