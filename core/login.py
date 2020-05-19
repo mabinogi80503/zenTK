@@ -164,7 +164,7 @@ class DMMAuthenticator(BasicAuthenticator):
             "getFullHeaders": "false",
             "xmr": "http://osapi.dmm.com",
             "oauthState": "",
-            "OAUTH_SIGNATURE_PUBLICKEY": "key_2020",
+            "OAUTH_SIGNATURE_PUBLICKEY": "key_2022",
         }
 
         resp = self._request(self.urls["request"], method="POST", data=payload)
