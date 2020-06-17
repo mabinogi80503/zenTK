@@ -29,7 +29,7 @@ class HitakaraEventInfo(EventInfoBase):
         if data is None:
             return None
 
-        event = list(data.get("event").values())[0]
+        event = data.get("event")
         if event is None:
             print("無活動！")
             return None

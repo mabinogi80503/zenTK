@@ -35,7 +35,7 @@ class OsakajiEventInfo(EventInfoBase):
         if data is None:
             return None
 
-        event = list(data.get("event").values())[0]
+        event = data.get("event")
         if event is None:
             print("無活動！")
             return None
@@ -45,7 +45,7 @@ class OsakajiEventInfo(EventInfoBase):
 
         event_info = cls(api)
         event_info.money = data.get("currency").get("money")
-        event_info.event_id = event.get("event_id")
+        event_info.event_id = 85
         fields = list(event["field"].values())
         event_info.field_id = fields[len(fields) - 1]["field_id"]
         event_info.layer_id = fields[len(fields) - 1]["layer_num"]
