@@ -4,8 +4,9 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-flake8 = "*"
+flake8 = "==3.8.3"
 black = "==19.10b0"
+rope = "==0.17.0"
 
 [packages]
 attrs = "==19.3.0"
@@ -15,7 +16,7 @@ parsimonious = "==0.8.1"
 prompt-toolkit = "==3.0.4"
 pycryptodome = "==3.9.7"
 requests = "==2.23.0"
-prettytable = "*"
+prettytable = "==0.7.2"
 
 [requires]
 python_version = "3.6"
