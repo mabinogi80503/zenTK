@@ -34,12 +34,13 @@ class ConsecutiveTeamEventInfo(EventInfoBase):
         money = data.get("currency").get("money")
         print(f"持有小判：{money}")
 
-        point = list(data.get("point").values())[0]
+        point = list(event.get("point").values())[0]
         print(f"持有御歲魂：{point}")
 
         event_info = cls(api)
         event_info.money = data.get("currency").get("money")
-        event_info.event_id = event.get("event_id")
+        # event_info.event_id = event.get("event_id")
+        event_info.event_id = 88
         # fields = list(event["field"].values())
         # event_info.field_id = fields[len(fields) - 1]["field_id"]
 
