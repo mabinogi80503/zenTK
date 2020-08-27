@@ -1,4 +1,13 @@
-from . import armament, consecutive, hitakara, normalexecutor, osakaji, tsuki, freesearch
+from . import (
+    armament,
+    consecutive,
+    hitakara,
+    normalexecutor,
+    osakaji,
+    tsuki,
+    freesearch,
+    firework_retake,
+)
 
 executors = {
     "common": normalexecutor.CommonBattleExecutor,
@@ -8,6 +17,7 @@ executors = {
     "tsuki": tsuki.TsukiExecutor,
     "freesearch": freesearch.FreesearchExecutor,
     "armament": armament.ArmamentExpansionExecutor,
+    "firework": firework_retake.FireworkRetakeExecutor,
 }
 
 
