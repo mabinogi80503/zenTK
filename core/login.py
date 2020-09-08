@@ -182,8 +182,8 @@ class DMMAuthenticator(BasicAuthenticator):
 
         self.server_url = mch.group(1)
 
-        loginUrl = self.server_url + "login"
-        payload.update({"url": loginUrl, "postData": ""})
+        loginUrl = self.server_url + "login?uid="
+        payload.update({"url": loginUrl, "postData": "lang_id=1"})
         resp = self._request(self.urls["request"], method="POST", data=payload)
 
         text = resp.text.replace("\\", "")
