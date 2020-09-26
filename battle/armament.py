@@ -38,7 +38,7 @@ class ArmamentExpansionEventInfo(EventInfoBase):
 
         event_info = cls(api)
         # event_info.event_id = event.get("event_id")
-        event_info.event_id = 83
+        event_info.event_id = 90
         fields = list(event["field"].values())
 
         not_finished_map_list = [
@@ -89,7 +89,7 @@ class ArmamentExpansionExecutor(BattleExecutorBase):
     def update_info_from_forward(self, data):
         self.finished = data["is_finish"]
 
-        if len(data["scout"]) != 0:
+        if data.get("scout") is not None:
             self._enemy_formation = data["scout"]["formation_id"]
             return BattlePointType.BATTLE
         else:
