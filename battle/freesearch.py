@@ -141,7 +141,7 @@ class FreesearchExecutor(BattleExecutorBase):
         self.finished = data["is_finish"]
         self._next_candidate_points = data["freesearch"]["next"] or []
 
-        if len(data["scout"]) != 0:
+        if data.get("scout") is not None :
             self._enemy_formation = data["scout"]["formation_id"]
             return BattlePointType.BATTLE
         else:
@@ -200,7 +200,8 @@ class FreesearchExecutor(BattleExecutorBase):
         self._left_move = data.get("movement", 0)
         # print(f"剩餘移動： {self._left_move } 步")
 
-        if "takeout" not in data["settle_up"].keys():
+        settle_up = data.get("settle_up") or {}
+        if "takeout" not in settle_up.keys():
             return
         self._takeout = data["settle_up"]["takeout"]
 
