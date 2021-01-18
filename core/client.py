@@ -12,7 +12,7 @@ import repairroom
 from .api import APICallFailedException
 from .database import UserLibrary
 from .datatype import Resources, SwordTeam
-from .login import DMMAuthenticator
+from .login import DMMAuthenticator_v2
 from .preferences import preferences_mgr
 from .utils import make_datetime
 
@@ -38,7 +38,7 @@ class TkrbClient(object):
 
     @classmethod
     def create(cls, account, password):
-        api = DMMAuthenticator(account, password).login()
+        api = DMMAuthenticator_v2(account, password).login()
         if not api:
             return None
 
