@@ -249,6 +249,7 @@ class DMMAuthenticator_v2(BasicAuthenticator):
             default_timeout=10,
             webdriver_options={"arguments": ["headless"]},
         )
+        self.webdriver = None
         self.headers = {
             "Accept-Encoding": "gzip, deflate, br",
             "Host": "www.dmm.com",
@@ -258,6 +259,10 @@ class DMMAuthenticator_v2(BasicAuthenticator):
         self.dmm_id = account
         self.dmm_pwd = password
         self.game_version = None
+
+    def __del__(self):
+        if self.webdriver:
+            self.webdriver.quit()
 
     def login(self):
         print("登入刀劍亂舞中...", end="")
